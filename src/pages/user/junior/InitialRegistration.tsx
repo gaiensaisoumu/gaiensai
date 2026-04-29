@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import styles from '../students/InitialRegistration.module.css';
 import { useTitle } from '../../../hooks/useTitle';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import NormalSection from '../../../components/ui/NormalSection';
 
 type InitialRegistrationProps = {
   onRegistered: (commit?: boolean) => Promise<boolean>;
@@ -394,44 +395,60 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
       <h1>初回登録</h1>
       <p className={styles.description}>初回は利用形態の設定をお願いします。</p>
       <form className={styles.form} onSubmit={handleSubmit}>
-        <div>
-          <p className={styles.label}>利用形態</p>
-          <div className={styles.checkboxGroup}>
-            <label className={styles.checkboxLabel}>
+        <NormalSection>
+          <h2 style={{marginBottom: '0.5rem'}}>利用形態</h2>
+          <div className={styles.usageTypeSelection}>
+            <label
+              className={`${styles.usageTypeButton} ${
+                juniorUsageType === 0 ? styles.usageTypeButtonSelected : ''
+              }`}
+            >
               <input
                 type='radio'
                 name='junior-usage-type'
-                className={styles.checkbox}
+                className={styles.usageTypeRadio}
                 checked={juniorUsageType === 0}
                 onChange={() => handleUsageTypeChange(0)}
               />
               中学生と保護者(共通のチケット使用)
             </label>
-            <label className={styles.checkboxLabel}>
+            <label
+              className={`${styles.usageTypeButton} ${
+                juniorUsageType === 1 ? styles.usageTypeButtonSelected : ''
+              }`}
+            >
               <input
                 type='radio'
                 name='junior-usage-type'
-                className={styles.checkbox}
+                className={styles.usageTypeRadio}
                 checked={juniorUsageType === 1}
                 onChange={() => handleUsageTypeChange(1)}
               />
               中学生と保護者(別々のチケット使用)
             </label>
-            <label className={styles.checkboxLabel}>
+            <label
+              className={`${styles.usageTypeButton} ${
+                juniorUsageType === 2 ? styles.usageTypeButtonSelected : ''
+              }`}
+            >
               <input
                 type='radio'
                 name='junior-usage-type'
-                className={styles.checkbox}
+                className={styles.usageTypeRadio}
                 checked={juniorUsageType === 2}
                 onChange={() => handleUsageTypeChange(2)}
               />
               中学生のみ
             </label>
-            <label className={styles.checkboxLabel}>
+            <label
+              className={`${styles.usageTypeButton} ${
+                juniorUsageType === 3 ? styles.usageTypeButtonSelected : ''
+              }`}
+            >
               <input
                 type='radio'
                 name='junior-usage-type'
-                className={styles.checkbox}
+                className={styles.usageTypeRadio}
                 checked={juniorUsageType === 3}
                 onChange={() => handleUsageTypeChange(3)}
               />
@@ -469,7 +486,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
               </button>
             </div>
           )}
-        </div>
+        </NormalSection>
 
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
         <button

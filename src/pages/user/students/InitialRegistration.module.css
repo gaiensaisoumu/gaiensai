@@ -407,3 +407,58 @@
   font-size: 1rem;
   box-sizing: border-box;
 }
+
+.usageTypeSelection {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(auto, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1300px) {
+  .usageTypeSelection {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 750px) {
+  .usageTypeSelection {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.usageTypeRadio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.usageTypeButton {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--main-text-color);
+  padding: 0.9rem 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.usageTypeButton:has(input[type='radio']:disabled) {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.usageTypeButtonSelected {
+  border-color: rgba(255, 255, 255, 0.72);
+  background: var(--primary-color);
+}
