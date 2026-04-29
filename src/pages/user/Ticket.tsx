@@ -280,6 +280,13 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
   const [warningMessages, setWarningMessages] = useState<string[]>([]);
   const [ticketStatus, setTicketStatus] = useState<TicketStatus>('unknown');
   const [cacheVersion, setCacheVersion] = useState(0);
+
+  // 中学生チケットかどうかを判定（affiliationが10000超なら中学生）
+  const isJuniorTicket = useMemo(() => {
+    const affiliationNum = Number(ticket.affiliation);
+    return !isNaN(affiliationNum) && affiliationNum > 10000;
+  }, [ticket.affiliation]);
+
   const [sortMode, setSortMode] = useState<TicketListSortMode>(() => {
     try {
       const saved = localStorage.getItem('ticketListSortMode');
@@ -792,7 +799,15 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
         return;
       }
 
-      const options = (data ?? []) as RelationshipOption[];
+      let options = (data ?? []) as RelationshipOption[];
+      // 中学生チケットの場合、選択可能な間柄を特定の3つに制限する
+      if (isJuniorTicket) {
+        options = [
+          { id: 0, name: '中学生' },
+          { id: 1, name: '保護者' },
+          { id: 2, name: '中学生と保護者' },
+        ];
+      }
       setRelationships(options);
       setSelectedRelationshipId(
         (previous) => previous ?? ticket.relationshipId,
@@ -801,7 +816,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
     };
 
     void loadRelationships();
-  }, [isRelationshipModalOpen, ticket.relationshipId]);
+  }, [isRelationshipModalOpen, ticket.relationshipId, isJuniorTicket]);
 
   const ticketUrl = `https://${config.site_url}/t/${token}`;
   const canCancelTicket =
@@ -810,7 +825,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
   const qrColor =
     ticket.performanceId > 0 && ticket.scheduleId === 0 ? '#d61322' : undefined;
   const canChangeRelationship =
-    !isDayTicket &&
+    (!isDayTicket || isJuniorTicket) &&
     !loading &&
     !cancelLoading &&
     !isChangingRelationship &&
@@ -954,7 +969,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
   };
 
   const handleChangeRelationship = async () => {
-    if (!canChangeRelationship || !selectedRelationshipId) {
+    if (!canChangeRelationship || selectedRelationshipId === null) {
       return;
     }
 
@@ -968,7 +983,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
     const tokenToVerify = getTurnstileToken();
 
     if (!tokenToVerify) {
-      alert('Turnstile認証を完了してから発券してください。');
+      alert('Turnstile認証を完了してから変更してください。');
       return;
     }
 
@@ -978,7 +993,8 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       const { data, error } = await supabase.functions.invoke('issue-tickets', {
         body: {
           ticketTypeId: ticket.ticketTypeId,
-          relationshipId: selectedRelationshipId,
+          relationshipId: 1, // 変更前の間柄IDはバックエンドで取得するため、ここではダミー値を送る
+          targetRelationshipId: selectedRelationshipId,
           performanceId: ticket.performanceId,
           scheduleId: ticket.scheduleId,
           issueCount: 1,
@@ -1340,7 +1356,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
         </ul>
       </section>
 
-      {!isDayTicket && (
+      {(!isDayTicket || isJuniorTicket) && (
         <section className={styles.noPrint}>
           <h3>間柄の変更</h3>
           <div className={styles.relationshipChangeSection}>
@@ -1359,7 +1375,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
         </section>
       )}
 
-      {!isDayTicket && isRelationshipModalOpen && (
+      {(!isDayTicket || isJuniorTicket) && isRelationshipModalOpen && (
         <div
           className={`${styles.relationshipModalOverlay} ${styles.noPrint}`}
           role='presentation'
@@ -1446,11 +1462,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
                 type='button'
                 className={styles.changeRelationshipConfirmButton}
                 onClick={handleChangeRelationship}
-                disabled={
-                  relationshipLoading ||
-                  isChangingRelationship ||
-                  !selectedRelationshipId
-                }
+                disabled={relationshipLoading || isChangingRelationship}
               >
                 {isChangingRelationship ? '変更中...' : '続行する'}
               </button>

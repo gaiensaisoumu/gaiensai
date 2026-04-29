@@ -29,6 +29,8 @@ type IssueTicketsRequest = {
   // If provided, the backend will (cancel old + issue new) transitionally.
   // Intended for "relationship change" reissue.
   cancelCode?: string;
+  // 変更先の間柄ID
+  targetRelationshipId?: number;
 };
 
 type TicketIssueMode =
@@ -87,6 +89,7 @@ const parseRequestBody = (body: unknown): IssueTicketsRequest => {
   const issueCount = Number(parsed.issueCount);
   const turnstileToken = parsed.turnstileToken;
   const cancelCodeRaw = parsed.cancelCode;
+  const targetRelationshipId = Number(parsed.targetRelationshipId);
 
   if (
     !Number.isInteger(ticketTypeId) ||
@@ -130,6 +133,7 @@ const parseRequestBody = (body: unknown): IssueTicketsRequest => {
     turnstileToken:
       typeof turnstileToken === 'string' ? turnstileToken.trim() : undefined,
     cancelCode,
+    targetRelationshipId,
   };
 };
 
@@ -835,19 +839,28 @@ export const handleIssueTicketsRequest = async (
     // For transactional "replace/reissue", validate the target ticket early and
     // adjust the per-user ticket limit check to account for the cancellation.
     let replaceTicketOffset = 0;
+    let oldTicket: {
+      id: string;
+      user_id: string;
+      status: string;
+      ticket_type: number;
+      person_count: number;
+    } | null = null;
     if (body.cancelCode) {
-      const { data: oldTicket, error: oldTicketError } = await adminClient
-        .from('tickets')
-        .select('id, user_id, status, ticket_type')
-        .eq('code', body.cancelCode)
-        .maybeSingle();
+      const { data: fetchedOldTicket, error: oldTicketError } =
+        await adminClient
+          .from('tickets')
+          .select('id, user_id, status, ticket_type, person_count')
+          .eq('code', body.cancelCode)
+          .maybeSingle();
 
-      if (oldTicketError || !oldTicket) {
+      if (oldTicketError || !fetchedOldTicket) {
         throw new HttpError(
           409,
           '差し替え対象のチケット情報の取得に失敗しました。時間をおいて再度お試しください。',
         );
       }
+      oldTicket = fetchedOldTicket; // 取得したチケット情報を外部スコープの変数に代入
 
       if (oldTicket.user_id !== user?.id) {
         throw new HttpError(403, '差し替え対象のチケットが不正です。');
@@ -867,7 +880,11 @@ export const handleIssueTicketsRequest = async (
         );
       }
 
-      if (entryOnlyId !== undefined && body.ticketTypeId === entryOnlyId) {
+      if (
+        (entryOnlyId !== undefined && body.ticketTypeId === entryOnlyId) ||
+        (juniorEntryOnlyId !== undefined &&
+          body.ticketTypeId === juniorEntryOnlyId)
+      ) {
         if (body.performanceId !== 0 || body.scheduleId !== 0) {
           throw new HttpError(
             409,
@@ -965,14 +982,20 @@ export const handleIssueTicketsRequest = async (
         ? body.issueCount * 2
         : body.issueCount;
     const personCountPerTicket =
-      !isDayTicket && isJuniorUser && juniorUsageType === 0 ? 2 : 1;
+      !isDayTicket &&
+      isJuniorUser &&
+      ((!body.cancelCode && juniorUsageType === 0) ||
+        body.targetRelationshipId === 2)
+        ? 2
+        : 1;
     const totalPersonCount = numCodes * personCountPerTicket;
     const maxTicketsPerJuniorUser =
       juniorUsageType === 0 || juniorUsageType === 1
         ? maxTicketsPerUser * 2
         : maxTicketsPerUser;
-    // 入場専用券のリクエストは制限チェックをスキップする
-    const isExemptLimit = isAdmissionOnlyTicket;
+    // 入場専用券のリクエストまたは間柄の変更時は制限チェックをスキップする
+    const isExemptLimit =
+      isAdmissionOnlyTicket || body.targetRelationshipId !== undefined;
 
     if (
       !isDayTicket &&
@@ -996,6 +1019,9 @@ export const handleIssueTicketsRequest = async (
     const getEncodingRelationshipId = (index: number): number => {
       if (!isJuniorUser || isDayTicket) {
         return relationshipId;
+      }
+      if (body.targetRelationshipId) {
+        return body.targetRelationshipId;
       }
       // junior_usage_type マッピング (0:両方共通->2, 1:別々->0or1, 2:本人のみ->0, 3:保護者のみ->1)
       switch (juniorUsageType) {
@@ -1076,10 +1102,10 @@ export const handleIssueTicketsRequest = async (
 
       try {
         const serial = startSerial;
-        const encRel = getEncodingRelationshipId(0);
         const ticketData = {
           affiliation,
-          relationship: encRel,
+          relationship:
+            body.targetRelationshipId ?? getEncodingRelationshipId(0),
           type: body.ticketTypeId,
           performance: body.performanceId,
           schedule: body.scheduleId,
