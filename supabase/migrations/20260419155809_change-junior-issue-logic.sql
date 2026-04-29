@@ -14,6 +14,7 @@ CREATE OR REPLACE FUNCTION public.issue_class_tickets_with_codes(p_user_id uuid,
  RETURNS TABLE(code text, signature text)
  LANGUAGE plpgsql
  SECURITY DEFINER
+ SET search_path = public
 AS $function$
 DECLARE
   i integer;
@@ -36,6 +37,7 @@ CREATE OR REPLACE FUNCTION public.issue_gym_tickets_with_codes(p_user_id uuid, p
  RETURNS TABLE(code text, signature text)
  LANGUAGE plpgsql
  SECURITY DEFINER
+ SET search_path = public
 AS $function$
 DECLARE
   i integer;
@@ -58,6 +60,7 @@ CREATE OR REPLACE FUNCTION public.reissue_gym_ticket_change_relationship_with_co
  RETURNS TABLE(code text, signature text)
  LANGUAGE plpgsql
  SECURITY DEFINER
+ SET search_path = public
 AS $function$
 BEGIN
   UPDATE public.tickets SET status = 'cancelled' WHERE code = p_old_code AND user_id = p_user_id;
@@ -72,6 +75,7 @@ CREATE OR REPLACE FUNCTION public.reissue_ticket_change_relationship_with_codes(
  RETURNS TABLE(code text, signature text)
  LANGUAGE plpgsql
  SECURITY DEFINER
+ SET search_path = public
 AS $function$
 BEGIN
   UPDATE public.tickets SET status = 'cancelled' WHERE code = p_old_code AND user_id = p_user_id;

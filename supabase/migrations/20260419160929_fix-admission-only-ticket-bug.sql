@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION public.issue_class_tickets_with_codes(p_user_id uuid,
  RETURNS TABLE(code text, signature text)
  LANGUAGE plpgsql
  SECURITY DEFINER
+ SET search_path = public
 AS $function$
 DECLARE
   i integer;
@@ -28,5 +29,3 @@ BEGIN
 END;
 $function$
 ;
-
-
