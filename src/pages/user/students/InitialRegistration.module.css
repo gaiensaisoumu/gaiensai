@@ -150,3 +150,260 @@
 .loadingOverlayText {
   margin: 0.8rem 0 0;
 }
+
+/* モーダルダイアログスタイル */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgb(0 0 0 / 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.modalContent {
+  background: var(--main-bg-color);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 30%);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalContent h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  color: var(--main-text-color);
+}
+
+.modalText {
+  margin: 0 0 0.5rem;
+  color: var(--main-text-color);
+  font-weight: 600;
+}
+
+.modalDescription {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--sub-text-color);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.modalButtonPrimary,
+.modalButtonSecondary {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.modalButtonPrimary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.modalButtonPrimary:hover:not(:disabled) {
+  background: var(--primary-color);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+}
+
+.modalButtonSecondary {
+  background: var(--sub-bg-color);
+  color: var(--main-text-color);
+  border: 1px solid var(--login-input-border);
+}
+
+.modalButtonSecondary:hover:not(:disabled) {
+  background: var(--main-bg-color);
+  border-color: var(--primary-color);
+}
+
+.modalButtonPrimary:disabled,
+.modalButtonSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 親情報フォームスタイル */
+.parentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup .label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 600;
+  color: var(--main-text-color);
+  font-size: 0.95rem;
+}
+
+.formGroup .input {
+  border: 1px solid var(--login-input-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background: var(--sub-bg-color);
+  color: var(--main-text-color);
+  transition: border-color 0.2s ease;
+}
+
+.formGroup .input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgb(var(--primary-color) / 10%);
+}
+
+.formGroup .input::placeholder {
+  color: var(--sub-text-color);
+}
+
+/* 保護者情報確認表示スタイル */
+.parentInfoConfirmation {
+  background: var(--sub-bg-color);
+  border: 1px solid var(--login-input-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.parentInfoLabel {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+  color: var(--main-text-color);
+  font-size: 0.95rem;
+}
+
+.parentInfoContent {
+  background: var(--main-bg-color);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.parentInfoItem {
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--main-text-color);
+}
+
+.parentInfoItem:first-child {
+  margin-top: 0;
+}
+
+.parentInfoItem:last-child {
+  margin-bottom: 0;
+}
+
+.parentInfoTitle {
+  font-weight: 600;
+  min-width: 60px;
+  color: var(--sub-text-color);
+  font-size: 0.9rem;
+}
+
+.parentInfoValue {
+  color: var(--main-text-color);
+}
+
+.editParentBtn {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.editParentBtn:hover {
+  background: var(--primary-color);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+}
+
+.editParentBtn:active {
+  transform: translateY(0);
+}
+
+
+.birthdayFieldset {
+  border: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.birthdayLegend {
+  width: 100%;
+  line-height: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.birthdayLabel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--login-input-text);
+}
+
+.birthdayInput {
+  flex: 1;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--login-input-border);
+  border-radius: 8px;
+  background-color: var(--url-bg-color);
+  color: var(--login-input-text);
+  text-align: right;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
