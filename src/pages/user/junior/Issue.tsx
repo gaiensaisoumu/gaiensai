@@ -11,7 +11,6 @@ import {
 import { formatTicketTypeLabel } from '../../../features/tickets/formatTicketTypeLabel';
 import { useEventConfig } from '../../../hooks/useEventConfig';
 import { useTitle } from '../../../hooks/useTitle';
-import { useTurnstile } from '../../../hooks/useTurnstile';
 import { supabase } from '../../../lib/supabase';
 import type {
   SelectedPerformance,
@@ -98,14 +97,6 @@ const Issue = () => {
   const [leavingStep, setLeavingStep] = useState<Step | null>(null);
   const [isForward, setIsForward] = useState(true);
   const animationTimerRef = useRef<number | null>(null);
-
-  const turnstileContainerId = 'junior-issue-turnstile-widget';
-  const {
-    token: turnstileToken,
-    hasSiteKey: hasTurnstileSiteKey,
-    getToken: getTurnstileToken,
-    reset: resetTurnstile,
-  } = useTurnstile({ containerId: turnstileContainerId });
 
   const { route } = useLocation();
   const { config } = useEventConfig();
@@ -547,12 +538,6 @@ const Issue = () => {
       return;
     }
 
-    const tokenToVerify = getTurnstileToken();
-    if (!tokenToVerify) {
-      alert('Turnstile認証を完了してから発券してください。');
-      return;
-    }
-
     setIsIssuing(true);
 
     const isGymSelection =
@@ -649,14 +634,12 @@ const Issue = () => {
         performanceId: selectedPerformance.performanceId,
         scheduleId: selectedPerformance.scheduleId,
         issueCount: 1,
-        turnstileToken: tokenToVerify,
       },
     });
 
     if (error) {
       const message = await readFunctionErrorMessage(error);
       alert(`発券に失敗しました: ${message}`);
-      resetTurnstile();
       setIsIssuing(false);
       return;
     }
@@ -810,27 +793,13 @@ const Issue = () => {
               disabled={
                 isIssuing ||
                 !canSubmit ||
-                isIssueReceptionStopped ||
-                !turnstileToken
+                isIssueReceptionStopped
               }
               style={step !== 3 ? { display: 'none' } : undefined}
             >
               {isIssuing ? '発券中...' : '発券する'}
             </button>
           </div>
-        </div>
-
-        <div className={styles.turnstileContainer}>
-          <div id={turnstileContainerId} className='cf-turnstile'></div>
-          {!hasTurnstileSiteKey ? (
-            <p className={styles.turnstileNote}>
-              Turnstile site key が未設定です。
-            </p>
-          ) : !turnstileToken ? (
-            <p className={styles.turnstileNote}>
-              Turnstile 認証を完了してください。
-            </p>
-          ) : null}
         </div>
       </div>
     </div>

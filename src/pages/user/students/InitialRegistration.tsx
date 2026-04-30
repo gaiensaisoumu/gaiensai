@@ -173,12 +173,6 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
         </div>
 
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-        <div className={styles.turnstileContainer}>
-          <div
-            id='initial-registration-turnstile'
-            className='cf-turnstile'
-          ></div>
-        </div>
         <button
           className={styles.submitButton}
           type='submit'

@@ -28,7 +28,7 @@ import type {
   TicketCardStatus,
   TicketListSortMode,
 } from '../../features/tickets/IssuedTicketCardList.tsx';
-import { useTurnstile } from '../../hooks/useTurnstile.ts';
+
 import { YEAR_BITS } from '../../../supabase/functions/_shared/ticketDataType.ts';
 import iconUrl from '../../assets/icon.webp';
 import { formatDateText } from '../../utils/formatDateText.ts';
@@ -305,14 +305,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       // Ignore errors in saving to localStorage
     }
   }, [sortMode]);
-
-  const turnstileContainerId = 'issue-turnstile-widget';
-  const {
-    token: turnstileToken,
-    hasSiteKey: hasTurnstileSiteKey,
-    getToken: getTurnstileToken,
-    reset: resetTurnstile,
-  } = useTurnstile({ containerId: turnstileContainerId });
 
   const token = props.id;
 
@@ -980,13 +972,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       return;
     }
 
-    const tokenToVerify = getTurnstileToken();
-
-    if (!tokenToVerify) {
-      alert('Turnstile認証を完了してから変更してください。');
-      return;
-    }
-
     setRelationshipError(null);
     setIsChangingRelationship(true);
     try {
@@ -998,7 +983,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
           performanceId: ticket.performanceId,
           scheduleId: ticket.scheduleId,
           issueCount: 1,
-          turnstileToken: tokenToVerify,
           cancelCode: code,
         },
       });
@@ -1006,7 +990,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       if (error) {
         const message = await readFunctionErrorMessage(error);
         setRelationshipError(`再発行に失敗しました: ${message}`);
-        resetTurnstile();
         return;
       }
 
@@ -1018,7 +1001,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
 
       if (!issuedTicket?.code || !issuedTicket.signature) {
         setRelationshipError('再発行結果を取得できませんでした。');
-        resetTurnstile();
         return;
       }
 
@@ -1050,7 +1032,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       route(`/t/${issuedTicket.code}.${issuedTicket.signature}`);
     } finally {
       setIsChangingRelationship(false);
-      resetTurnstile();
     }
   };
 
@@ -1433,21 +1414,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
             {relationshipError && (
               <p className={styles.relationshipError}>{relationshipError}</p>
             )}
-
-            <div className={styles.turnstileContainer}>
-              <div id={turnstileContainerId} className='cf-turnstile'></div>
-              {!hasTurnstileSiteKey ? (
-                <p className={styles.turnstileNote}>
-                  Turnstile site key が未設定です。
-                </p>
-              ) : !turnstileToken ? (
-                <p className={styles.turnstileNote}>
-                  発券前に Turnstile 認証を完了してください。
-                </p>
-              ) : (
-                ''
-              )}
-            </div>
 
             <div className={styles.relationshipModalActions}>
               <button

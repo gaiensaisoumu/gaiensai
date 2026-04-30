@@ -25,7 +25,6 @@ type IssueTicketsRequest = {
   performanceId: number;
   scheduleId: number;
   issueCount: number;
-  turnstileToken?: string;
   // If provided, the backend will (cancel old + issue new) transitionally.
   // Intended for "relationship change" reissue.
   cancelCode?: string;
@@ -87,7 +86,6 @@ const parseRequestBody = (body: unknown): IssueTicketsRequest => {
   const performanceId = Number(parsed.performanceId);
   const scheduleId = Number(parsed.scheduleId);
   const issueCount = Number(parsed.issueCount);
-  const turnstileToken = parsed.turnstileToken;
   const cancelCodeRaw = parsed.cancelCode;
   const targetRelationshipId = Number(parsed.targetRelationshipId);
 
@@ -130,62 +128,12 @@ const parseRequestBody = (body: unknown): IssueTicketsRequest => {
     performanceId,
     scheduleId,
     issueCount,
-    turnstileToken:
-      typeof turnstileToken === 'string' ? turnstileToken.trim() : undefined,
     cancelCode,
     targetRelationshipId,
   };
 };
 
-const verifyTurnstileToken = async (
-  req: Request,
-  token: string,
-): Promise<void> => {
-  const secret = getEnv('TURNSTILE_SECRET_KEY');
-  const ipHeader =
-    req.headers.get('cf-connecting-ip') ??
-    req.headers.get('x-forwarded-for') ??
-    '';
-  const remoteIp = ipHeader.split(',')[0]?.trim();
 
-  const body = new URLSearchParams({
-    secret,
-    response: token,
-  });
-
-  if (remoteIp) {
-    body.set('remoteip', remoteIp);
-  }
-
-  const verifyRes = await fetch(
-    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    },
-  );
-
-  if (!verifyRes.ok) {
-    throw new HttpError(
-      502,
-      'Turnstile検証サーバーへの接続に失敗しました。時間をおいて再度お試しください。',
-    );
-  }
-
-  const verifyPayload = (await verifyRes.json()) as {
-    success?: boolean;
-    'error-codes'?: string[];
-  };
-
-  if (!verifyPayload.success) {
-    const codes = (verifyPayload['error-codes'] ?? []).join(', ');
-    throw new HttpError(
-      403,
-      `Turnstile認証に失敗しました。${codes ? `(${codes})` : ''}`,
-    );
-  }
-};
 
 const validatePerformanceAndSchedule = (
   body: IssueTicketsRequest,
@@ -483,15 +431,6 @@ export const handleIssueTicketsRequest = async (
     const isJuniorEntryOnlyTicket =
       juniorEntryOnlyId !== undefined &&
       body.ticketTypeId === juniorEntryOnlyId;
-    const requiresTurnstile =
-      !isDayTicket && !(isJuniorUser && isJuniorEntryOnlyTicket);
-
-    if (requiresTurnstile) {
-      if (!body.turnstileToken) {
-        throw new HttpError(400, 'Turnstileトークンがありません。');
-      }
-      await verifyTurnstileToken(req, body.turnstileToken);
-    }
 
     const affiliation = isAuthenticatedStudent
       ? Number(userRow?.affiliation ?? -1)

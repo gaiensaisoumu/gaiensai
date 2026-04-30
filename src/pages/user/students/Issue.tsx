@@ -5,7 +5,7 @@ import IssueStepDetails from '../../../features/issue/IssueStepDetails';
 import IssueStepPerformance from '../../../features/issue/IssueStepPerformance';
 import IssueStepTicketType from '../../../features/issue/IssueStepTicketType';
 import { ISSUE_RESULT_STORAGE_KEY } from '../../../features/issue/issueResultStorage';
-import { useTurnstile } from '../../../hooks/useTurnstile';
+
 import { supabase } from '../../../lib/supabase';
 import type {
   RelationshipRow,
@@ -119,13 +119,6 @@ const Issue = () => {
   const animationTimerRef = useRef<number | null>(null);
   const prevSelectedPerformanceRef = useRef<SelectedPerformance>(null);
   const selectionFromQueryHasRun = useRef(false);
-  const turnstileContainerId = 'issue-turnstile-widget';
-  const {
-    token: turnstileToken,
-    hasSiteKey: hasTurnstileSiteKey,
-    getToken: getTurnstileToken,
-    reset: resetTurnstile,
-  } = useTurnstile({ containerId: turnstileContainerId });
 
   const { route } = useLocation();
   const { config } = useEventConfig();
@@ -790,13 +783,6 @@ const Issue = () => {
       return;
     }
 
-    const tokenToVerify = getTurnstileToken();
-
-    if (!tokenToVerify) {
-      alert('Turnstile認証を完了してから発券してください。');
-      return;
-    }
-
     setIsIssuing(true);
 
     const isGymSelection =
@@ -910,14 +896,12 @@ const Issue = () => {
         performanceId: selectedPerformance.performanceId,
         scheduleId: selectedPerformance.scheduleId,
         issueCount,
-        turnstileToken: tokenToVerify,
       },
     });
 
     if (error) {
       const detailedMessage = await readFunctionErrorMessage(error);
       alert(`発券に失敗しました: ${detailedMessage}`);
-      resetTurnstile();
       setIsIssuing(false);
       return;
     }
@@ -930,7 +914,6 @@ const Issue = () => {
 
     if (!issuedTickets || issuedTickets.length === 0) {
       alert('発券結果を取得できませんでした。');
-      resetTurnstile();
       setIsIssuing(false);
       return;
     }
@@ -959,7 +942,6 @@ const Issue = () => {
     );
     setIssueCount(1);
     setSelectedRelationshipId(null);
-    resetTurnstile();
     setIsIssuing(false);
     route('/students/issue/result');
   };
@@ -1004,7 +986,9 @@ const Issue = () => {
       )}
       {isAtIssueLimit && (
         <Alert type='warning' className={styles.onlyOwnClassAlert}>
-          <p>最大発行可能枚数に達しているため、入場専用券のみ発券できます。さらに必要な場合は、不要なチケットをキャンセルするか、友達からもらってください。</p>
+          <p>
+            最大発行可能枚数に達しているため、入場専用券のみ発券できます。さらに必要な場合は、不要なチケットをキャンセルするか、友達からもらってください。
+          </p>
         </Alert>
       )}
 
@@ -1110,7 +1094,6 @@ const Issue = () => {
               disabled={
                 !canSubmit ||
                 isIssuing ||
-                !turnstileToken ||
                 !isTicketIssuingEnabled ||
                 isAtIssueLimit ||
                 isOverRemainingIssueCapacity
@@ -1120,20 +1103,6 @@ const Issue = () => {
               {isIssuing ? '発券中...' : '発券する'}
             </button>
           </div>
-        </div>
-        <div className={styles.turnstileContainer}>
-          <div id={turnstileContainerId} className='cf-turnstile'></div>
-          {!hasTurnstileSiteKey ? (
-            <p className={styles.turnstileNote}>
-              Turnstile site key が未設定です。
-            </p>
-          ) : !turnstileToken ? (
-            <p className={styles.turnstileNote}>
-              発券前に Turnstile 認証を完了してください。
-            </p>
-          ) : (
-            ''
-          )}
         </div>
       </div>
     </div>

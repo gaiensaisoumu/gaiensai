@@ -356,29 +356,6 @@
   cursor: not-allowed;
 }
 
-
-.turnstileContainer {
-  margin: 1rem 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.turnstileNote,
-.turnstileOk {
-  margin: 0.4rem 0 0;
-  font-size: 0.85rem;
-}
-
-.turnstileNote {
-  color: var(--sub-text-color);
-}
-
-.turnstileOk {
-  color: var(--accent-color);
-}
-
 @media print {
   :global(:root) {
     --main-bg-color: #ffffff !important;

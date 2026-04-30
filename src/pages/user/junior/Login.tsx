@@ -2,7 +2,6 @@ import { useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
 import { supabase } from '../../../lib/supabase';
-import { useTurnstile } from '../../../hooks/useTurnstile';
 import { useTitle } from '../../../hooks/useTitle';
 import type { Session } from '../../../types/types';
 
@@ -20,12 +19,6 @@ const JuniorLogin = () => {
   useTitle('ログイン - 中学生用ページ');
 
   const { route } = useLocation();
-  const {
-    token: turnstileToken,
-    hasSiteKey: hasTurnstileSiteKey,
-    getToken: getTurnstileToken,
-    reset: resetTurnstile,
-  } = useTurnstile({ containerId: 'login-junior-turnstile' });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -49,13 +42,6 @@ const JuniorLogin = () => {
 
   const handleLogin = async (event: Event) => {
     event.preventDefault();
-    const captchaToken = getTurnstileToken();
-
-    if (!captchaToken) {
-      alert('Turnstile認証を完了してからログインしてください。');
-      return;
-    }
-
     const normalizedId = loginId.trim();
     const normalizedBirthday =
       birthdayYear.trim().padStart(4, '0') +
@@ -73,12 +59,7 @@ const JuniorLogin = () => {
     const { error } = await supabase.auth.signInWithPassword({
       email: `${compositeId}@gaiensai.local`,
       password: normalizedBirthday,
-      options: {
-        captchaToken,
-      },
     });
-
-    resetTurnstile();
     if (error) {
       alert('ログインに失敗しました。IDまたは誕生日を確認してください。');
     }
@@ -152,23 +133,9 @@ const JuniorLogin = () => {
             </label>
           </fieldset>
 
-          <div className={styles.turnstileContainer}>
-            <div id='login-junior-turnstile' className='cf-turnstile'></div>
-            {!hasTurnstileSiteKey ? (
-              <p className={styles.turnstileNote}>
-                Turnstile site key が未設定です。
-              </p>
-            ) : !turnstileToken ? (
-              <p className={styles.turnstileNote}>
-                Turnstile 認証を完了してください。
-              </p>
-            ) : (
-              ''
-            )}
-          </div>
           <button
             className={styles.loginButton}
-            disabled={loading || !turnstileToken || !hasTurnstileSiteKey}
+            disabled={loading}
           >
             {loading ? <span>読み込み中</span> : <span>ログイン</span>}
           </button>

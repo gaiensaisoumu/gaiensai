@@ -418,24 +418,4 @@
   }
 }
 
-.turnstileContainer {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
 
-.turnstileNote,
-.turnstileOk {
-  margin: 0.4rem 0 0;
-  font-size: 0.85rem;
-}
-
-.turnstileNote {
-  color: var(--sub-text-color);
-}
-
-.turnstileOk {
-  color: var(--accent-color);
-}

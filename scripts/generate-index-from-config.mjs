@@ -143,9 +143,6 @@ const userHtml = `<!doctype html>
   <meta name="keywords" content="${escapeHtml(
   `${eventName},${school},文化祭,高校,${catchCopy}`,
 )}" />
-
-  <!-- Cloudflare Turnstile -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
 </head>
 
 <body>

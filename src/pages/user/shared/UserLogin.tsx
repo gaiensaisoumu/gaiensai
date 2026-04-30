@@ -2,7 +2,6 @@ import { useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
 import { supabase } from '../../../lib/supabase';
-import { useTurnstile } from '../../../hooks/useTurnstile';
 import { useTitle } from '../../../hooks/useTitle';
 import type { Session } from '../../../types/types';
 
@@ -31,12 +30,6 @@ const UserLogin = ({ basePath, pageTitle }: UserLoginProps) => {
   useTitle(`ログイン - ${pageTitle}`);
 
   const { route } = useLocation();
-  const {
-    token: turnstileToken,
-    hasSiteKey: hasTurnstileSiteKey,
-    getToken: getTurnstileToken,
-    reset: resetTurnstile,
-  } = useTurnstile({ containerId: 'login-email-turnstile' });
 
   useEffect(() => {
     const currentParams = new URLSearchParams(window.location.search);
@@ -82,12 +75,6 @@ const UserLogin = ({ basePath, pageTitle }: UserLoginProps) => {
 
   const handleLogin = async (event: Event) => {
     event.preventDefault();
-    const captchaToken = getTurnstileToken();
-
-    if (!captchaToken) {
-      alert('Turnstile認証を完了してからログインしてください。');
-      return;
-    }
 
     setLoading(true);
     const loginEmail = `${email}@gaiensai.local`;
@@ -95,12 +82,8 @@ const UserLogin = ({ basePath, pageTitle }: UserLoginProps) => {
     const { error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password,
-      options: {
-        captchaToken,
-      },
     });
 
-    resetTurnstile();
     if (error) {
       alert(`ログインに失敗しました: ${error.message}`);
     }
@@ -183,23 +166,9 @@ const UserLogin = ({ basePath, pageTitle }: UserLoginProps) => {
             onChange={(e) => setPassword(e.currentTarget.value)}
           />
 
-          <div className={styles.turnstileContainer}>
-            <div id='login-email-turnstile' className='cf-turnstile'></div>
-            {!hasTurnstileSiteKey ? (
-              <p className={styles.turnstileNote}>
-                Turnstile site key が未設定です。
-              </p>
-            ) : !turnstileToken ? (
-              <p className={styles.turnstileNote}>
-                Turnstile 認証を完了してください。
-              </p>
-            ) : (
-              ''
-            )}
-          </div>
           <button
             className={styles.loginButton}
-            disabled={loading || !turnstileToken || !hasTurnstileSiteKey}
+            disabled={loading}
           >
             {loading ? <span>読み込み中</span> : <span>ログイン</span>}
           </button>
