@@ -18,7 +18,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",
     "preact": "^10.29.0",
-    "preact-iso": "^2.11.1",
+    "preact-iso": "^2.12.0",
     "qr-scanner": "^1.4.2",
     "react-icons": "^5.5.0",
     "recharts": "^3.8.0",
