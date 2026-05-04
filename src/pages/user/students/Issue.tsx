@@ -29,6 +29,38 @@ const GYM_TICKET_KEYWORD = '体育館';
 const CLASS_INVITE_TICKET_ID = 1;
 const GYM_INVITE_TICKET_ID = 3;
 
+type ClassTicketCounterRow = {
+  issued_general: number | null;
+  issued_junior: number | null;
+  issued_other: number | null;
+};
+
+type GymTicketCounterRow = {
+  issued_count: number | null;
+};
+
+const calculateClassGeneralRemaining = ({
+  totalCapacity,
+  juniorCapacity,
+  issuedGeneral,
+  issuedJunior,
+  issuedOther,
+  isJuniorReleased,
+}: {
+  totalCapacity: number;
+  juniorCapacity: number;
+  issuedGeneral: number;
+  issuedJunior: number;
+  issuedOther: number;
+  isJuniorReleased: boolean;
+}): number => {
+  if (isJuniorReleased) {
+    return Math.max(totalCapacity - issuedGeneral - issuedJunior - issuedOther, 0);
+  }
+
+  return Math.max(totalCapacity - juniorCapacity - issuedGeneral - issuedOther, 0);
+};
+
 const readFunctionErrorMessage = async (error: unknown): Promise<string> => {
   const fallback =
     error instanceof Error ? error.message : '不明なエラーが発生しました。';
@@ -411,7 +443,7 @@ const Issue = () => {
 
         const [
           { data: performanceData, error: performanceError },
-          { count, error: ticketCountError },
+          { data: counterData, error: counterError },
         ] = await Promise.all([
           supabase
             .from('gym_performances')
@@ -419,18 +451,21 @@ const Issue = () => {
             .eq('id', performanceId)
             .maybeSingle(),
           supabase
-            .from('gym_tickets')
-            .select('id, tickets!inner(status)', { count: 'exact', head: true })
+            .from('gym_ticket_counters')
+            .select('issued_count')
             .eq('performance_id', performanceId)
-            .eq('tickets.status', 'valid'),
+            .maybeSingle(),
         ]);
 
-        if (performanceError || ticketCountError || !performanceData) {
+        if (performanceError || counterError || !performanceData) {
           return;
         }
 
+        const issuedCount = Number(
+          (counterData as GymTicketCounterRow | null)?.issued_count ?? 0,
+        );
         const remaining = Math.max(
-          Number(performanceData.capacity ?? 0) - Number(count ?? 0),
+          Number(performanceData.capacity ?? 0) - issuedCount,
           0,
         );
 
@@ -462,11 +497,12 @@ const Issue = () => {
         const [
           { data: performanceData, error: performanceError },
           { data: scheduleData, error: scheduleError },
-          { data: remainingData, error: remainingError },
+          { data: counterData, error: counterError },
+          { data: configData, error: configError },
         ] = await Promise.all([
           supabase
             .from('class_performances')
-            .select('id, class_name')
+            .select('id, class_name, total_capacity, junior_capacity')
             .eq('id', performanceId)
             .maybeSingle(),
           supabase
@@ -474,24 +510,37 @@ const Issue = () => {
             .select('id, round_name')
             .eq('id', scheduleId)
             .maybeSingle(),
-          supabase.rpc('get_remaining_seats', {
-            p_performance_id: performanceId,
-            p_schedule_id: scheduleId,
-          }),
+          supabase
+            .from('class_ticket_counters')
+            .select('issued_general, issued_junior, issued_other')
+            .eq('class_id', performanceId)
+            .eq('round_id', scheduleId)
+            .maybeSingle(),
+          supabase
+            .from('configs')
+            .select('junior_release_open')
+            .order('id', { ascending: true })
+            .limit(1)
+            .maybeSingle(),
         ]);
 
         if (
           !performanceError &&
           !scheduleError &&
-          !remainingError &&
+          !counterError &&
+          !configError &&
           performanceData &&
           scheduleData
         ) {
-          const remaining = Number(
-            (
-              remainingData as { remaining_general: number | string }[] | null
-            )?.[0]?.remaining_general ?? 0,
-          );
+          const counter = counterData as ClassTicketCounterRow | null;
+          const remaining = calculateClassGeneralRemaining({
+            totalCapacity: Number(performanceData.total_capacity ?? 0),
+            juniorCapacity: Number(performanceData.junior_capacity ?? 0),
+            issuedGeneral: Number(counter?.issued_general ?? 0),
+            issuedJunior: Number(counter?.issued_junior ?? 0),
+            issuedOther: Number(counter?.issued_other ?? 0),
+            isJuniorReleased: Boolean(configData?.junior_release_open),
+          });
 
           if (remaining > 0) {
             const classTicketTypeId = await pickTicketTypeIdForVenue('class');

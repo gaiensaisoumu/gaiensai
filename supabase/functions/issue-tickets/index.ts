@@ -1016,16 +1016,6 @@ export const handleIssueTicketsRequest = async (
     const endSerial = counterData as number;
     let issuedTickets: Array<{ code: string; signature: string }>;
 
-    const { data, error } = await adminClient.rpc('get_remaining_seats', {
-      p_performance_id: body.performanceId,
-      p_schedule_id: body.scheduleId,
-    });
-    if (error) {
-      console.error(error);
-    } else {
-      console.log(data);
-    }
-
     if (!body.cancelCode) {
       issuedTickets = await issueWithRollback({
         adminClient: adminClient as unknown as RpcClient,

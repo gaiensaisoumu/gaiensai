@@ -19,6 +19,14 @@ type PerformanceSchedule = {
   round_name: string;
 };
 
+type ClassTicketCounterRow = {
+  class_id: number;
+  round_id: number;
+  issued_general: number | null;
+  issued_junior: number | null;
+  issued_other: number | null;
+};
+
 type PerformancesTableProps = {
   enableIssueJump?: boolean;
   issuePath?: string;
@@ -177,69 +185,83 @@ const PerformancesTable = ({
       );
       const loadedSchedules = (scheduleData ?? []) as PerformanceSchedule[];
 
-      // チケット種別のうち、中学生枠としてカウントするものを特定する
-      const { data: juniorTypes } = await supabase
-        .from('ticket_types')
-        .select('id')
-        .eq('type', '中学生券');
-      const juniorTypeIds = new Set(juniorTypes?.map((t) => t.id) || []);
+      const performanceIds = loadedPerformances.map((p) => p.id);
+      const scheduleIds = loadedSchedules.map((s) => s.id);
 
-      // 全ての有効なクラス公演チケットを一度のクエリで取得 (N+1問題の解消)
-      const { data: ticketData, error: ticketError } = await supabase
-        .from('class_tickets')
-        .select(
-          'class_id, round_id, tickets!inner(status, ticket_type, person_count)',
-        )
-        .eq('tickets.status', 'valid');
+      const countersQuery =
+        performanceIds.length > 0 && scheduleIds.length > 0
+          ? supabase
+              .from('class_ticket_counters')
+              .select(
+                'class_id, round_id, issued_general, issued_junior, issued_other',
+              )
+              .in('class_id', performanceIds)
+              .in('round_id', scheduleIds)
+          : Promise.resolve({ data: [], error: null });
 
-      if (ticketError && isMounted) {
+      const [
+        { data: counterData, error: counterError },
+        { data: configData, error: configError },
+      ] = await Promise.all([
+        countersQuery,
+        supabase
+          .from('configs')
+          .select('junior_release_open')
+          .order('id', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if ((counterError || configError) && isMounted) {
         setErrorMessage('残席情報の取得に失敗しました。');
         setLoading(false);
         return;
       }
 
-      // 取得したチケットデータを集計
-      const counts = new Map<string, { total: number; junior: number }>();
-      (
-        (ticketData as unknown as Array<{
-          class_id: number;
-          round_id: number;
-          tickets: {
-            ticket_type: number;
-            person_count: number;
-          };
-        }>) ?? []
-      ).forEach((row) => {
+      const isJuniorReleased = Boolean(configData?.junior_release_open);
+      const counts = new Map<
+        string,
+        { general: number; junior: number; other: number }
+      >();
+      ((counterData as ClassTicketCounterRow[] | null) ?? []).forEach((row) => {
         const key = `${row.class_id}-${row.round_id}`;
-        const current = counts.get(key) || { total: 0, junior: 0 };
-        const pCount = row.tickets.person_count ?? 1;
-        current.total += pCount;
-        if (juniorTypeIds.has(row.tickets.ticket_type)) {
-          current.junior += pCount;
-        }
-        counts.set(key, current);
+        counts.set(key, {
+          general: Number(row.issued_general ?? 0),
+          junior: Number(row.issued_junior ?? 0),
+          other: Number(row.issued_other ?? 0),
+        });
       });
 
       const seatMap = new Map<string, number>();
       loadedSchedules.forEach((s) => {
         loadedPerformances.forEach((p) => {
           const key = `${p.id}-${s.id}`;
-          const stat = counts.get(key) || { total: 0, junior: 0 };
+          const stat = counts.get(key) || {
+            general: 0,
+            junior: 0,
+            other: 0,
+          };
 
           const totalCap = p.total_capacity ?? 0;
           const juniorCap = p.junior_capacity ?? 0;
           const generalCap = Math.max(totalCap - juniorCap, 0);
-
-          const juniorIssued = stat.junior;
-          const generalIssued = stat.total - stat.junior;
+          const totalIssued = stat.general + stat.junior + stat.other;
+          const generalRemainingRaw =
+            generalCap - stat.general - stat.other;
 
           let remaining = 0;
           if (currentRemainingMode === 'total') {
-            remaining = totalCap - stat.total;
+            remaining = totalCap - totalIssued;
           } else if (currentRemainingMode === 'junior') {
-            remaining = juniorCap - juniorIssued;
+            remaining = isJuniorReleased
+              ? totalCap - totalIssued
+              : juniorCap -
+                stat.junior -
+                Math.max(-generalRemainingRaw, 0);
           } else {
-            remaining = generalCap - generalIssued;
+            remaining = isJuniorReleased
+              ? totalCap - totalIssued
+              : generalRemainingRaw;
           }
           seatMap.set(key, Math.max(remaining, 0));
         });
