@@ -70,6 +70,7 @@ type AdminAuthBody =
   | { mode: 'updateAllTeachers'; teachers: { id: number; name: string }[] }
   | { mode: 'deleteAllStudentAccounts' }
   | { mode: 'deleteAccountsByType'; accountType: 'student' | 'junior' }
+  | { mode: 'deleteAllTicketsAndResetCounters' }
   | { mode: 'getStudentUsers' }
   | {
       mode: 'resetUserPassword';
@@ -344,6 +345,10 @@ const parseBody = (body: unknown): AdminAuthBody => {
       );
     }
     return { mode: 'deleteAccountsByType', accountType };
+  }
+
+  if (action === 'deleteAllTicketsAndResetCounters') {
+    return { mode: 'deleteAllTicketsAndResetCounters' };
   }
 
   if (action === 'getStudentUsers') {
@@ -1182,6 +1187,82 @@ Deno.serve(async (req) => {
           count: deletedCount,
           remaining, // 残数があることをフロントに伝える
           errors: errors.length > 0 ? errors : undefined,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    if (body.mode === 'deleteAllTicketsAndResetCounters') {
+      const session = await requireValidSession(adminClient, req);
+
+      const { count: ticketCount, error: countError } = await adminClient
+        .from('tickets')
+        .select('id', { count: 'exact', head: true });
+
+      if (countError) {
+        throw countError;
+      }
+
+      const { error: deleteTicketsError } = await adminClient
+        .from('tickets')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (deleteTicketsError) {
+        throw deleteTicketsError;
+      }
+
+      const { error: resetClassCountersError } = await adminClient
+        .from('class_ticket_counters')
+        .update({
+          issued_general: 0,
+          issued_junior: 0,
+          issued_other: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .gte('issued_general', 0);
+
+      if (resetClassCountersError) {
+        throw resetClassCountersError;
+      }
+
+      const { error: resetGymCountersError } = await adminClient
+        .from('gym_ticket_counters')
+        .update({
+          issued_count: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .gte('issued_count', 0);
+
+      if (resetGymCountersError) {
+        throw resetGymCountersError;
+      }
+
+      const { error: resetCodeCountersError } = await adminClient
+        .from('ticket_code_counters')
+        .update({
+          last_value: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .gte('last_value', 0);
+
+      if (resetCodeCountersError) {
+        throw resetCodeCountersError;
+      }
+
+      await adminClient
+        .from('admin_sessions')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('id', session.id);
+
+      return new Response(
+        JSON.stringify({
+          deleted: true,
+          deletedTicketCount: ticketCount ?? 0,
+          countersReset: true,
         }),
         {
           status: 200,

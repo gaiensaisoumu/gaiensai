@@ -307,9 +307,12 @@ const SettingsContent = () => {
 
   const [showDeleteAllAccountsModal, setShowDeleteAllAccountsModal] =
     useState(false);
+  const [showDeleteAllTicketsModal, setShowDeleteAllTicketsModal] =
+    useState(false);
   const [pendingDeleteAccountType, setPendingDeleteAccountType] =
     useState<AccountDeletionType>('student');
   const [isDeletingAllAccounts, setIsDeletingAllAccounts] = useState(false);
+  const [isDeletingAllTickets, setIsDeletingAllTickets] = useState(false);
 
   const handleDeleteAllAccounts = async () => {
     setSettingsMessageScope('deletionTool');
@@ -370,6 +373,51 @@ const SettingsContent = () => {
       // 削除後、生徒アカウント管理ページの一覧を更新する必要があるが、
       // ここでは直接的な更新は行わず、ユーザーに手動更新を促すか、
       // ページ遷移を推奨する。
+    }
+  };
+
+  const handleDeleteAllTickets = async () => {
+    setSettingsMessageScope('deletionTool');
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    setIsDeletingAllTickets(true);
+    setShowDeleteAllTicketsModal(false);
+
+    try {
+      const token = getSessionToken();
+      if (!token) {
+        throw new Error('セッションがありません。再ログインしてください。');
+      }
+
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: {
+          action: 'deleteAllTicketsAndResetCounters',
+        },
+        headers: {
+          'x-admin-session-token': token,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.deleted || !data?.countersReset) {
+        throw new Error('チケット削除またはカウンターリセットに失敗しました。');
+      }
+
+      const deletedTicketCount =
+        typeof data.deletedTicketCount === 'number' ? data.deletedTicketCount : 0;
+      setSettingsSuccess(
+        `合計 ${deletedTicketCount} 件のチケットを削除し、カウンターをリセットしました。`,
+      );
+    } catch (error) {
+      const message = await readErrorMessage(error);
+      setSettingsError(
+        `チケット削除とカウンターリセットに失敗しました。${message}`,
+      );
+    } finally {
+      setIsDeletingAllTickets(false);
     }
   };
 
@@ -1642,6 +1690,18 @@ const SettingsContent = () => {
           データの削除は慎重に行う必要があります。削除を行う前に、必ずデータのバックアップを取ってください。
         </p>
         <div className={styles.deleteButtonContainer}>
+          <h3>チケットの削除</h3>
+          <p className={styles.noteText}>
+            全ての発券済みチケットを削除し、残席カウンターとチケット採番カウンターをリセットします。
+          </p>
+          <button
+            type='button'
+            className={`${styles.authButton} ${styles.settingModalConfirmDanger}`}
+            onClick={() => setShowDeleteAllTicketsModal(true)}
+            disabled={isDeletingAllAccounts || isDeletingAllTickets}
+          >
+            全てのチケットを削除してカウンターをリセット
+          </button>
           <h3>生徒アカウントの削除</h3>
           <button
             type='button'
@@ -1650,7 +1710,7 @@ const SettingsContent = () => {
               setPendingDeleteAccountType('student');
               setShowDeleteAllAccountsModal(true);
             }}
-            disabled={isDeletingAllAccounts}
+            disabled={isDeletingAllAccounts || isDeletingAllTickets}
           >
             全ての生徒アカウントを削除
           </button>
@@ -1662,7 +1722,7 @@ const SettingsContent = () => {
               setPendingDeleteAccountType('junior');
               setShowDeleteAllAccountsModal(true);
             }}
-            disabled={isDeletingAllAccounts}
+            disabled={isDeletingAllAccounts || isDeletingAllTickets}
           >
             全ての中学生アカウントを削除
           </button>
@@ -1854,6 +1914,50 @@ const SettingsContent = () => {
         </div>
       )}
 
+      {showDeleteAllTicketsModal && (
+        <div
+          className={styles.settingModalOverlay}
+          role='presentation'
+          onClick={() => setShowDeleteAllTicketsModal(false)}
+        >
+          <div
+            className={styles.settingModal}
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='delete-all-tickets-title'
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3
+              id='delete-all-tickets-title'
+              className={styles.settingModalTitle}
+            >
+              全てのチケットを削除してカウンターをリセットしますか？
+            </h3>
+            <p>
+              この操作は取り消せません。全ての発券済みチケットが削除され、残席カウンターとチケット採番カウンターがリセットされます。本当に実行しますか？
+            </p>
+            <div className={styles.settingModalActions}>
+              <button
+                type='button'
+                className={styles.settingModalCancel}
+                onClick={() => setShowDeleteAllTicketsModal(false)}
+                disabled={isDeletingAllTickets}
+              >
+                キャンセル
+              </button>
+              <button
+                type='button'
+                className={`${styles.settingModalConfirm} ${styles.settingModalConfirmDanger}`}
+                onClick={handleDeleteAllTickets}
+                disabled={isDeletingAllTickets}
+              >
+                {isDeletingAllTickets ? '削除中...' : '削除してリセット'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isDeletingAllAccounts && (
         <div className={styles.settingModalOverlay}>
           <LoadingSpinner
@@ -1863,6 +1967,12 @@ const SettingsContent = () => {
                 : '全ての中学生アカウントを削除中です...'
             }
           />
+        </div>
+      )}
+
+      {isDeletingAllTickets && (
+        <div className={styles.settingModalOverlay}>
+          <LoadingSpinner message='全てのチケットを削除し、カウンターをリセット中です...' />
         </div>
       )}
     </div>
