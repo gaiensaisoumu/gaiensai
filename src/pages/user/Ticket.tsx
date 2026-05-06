@@ -281,10 +281,10 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
   const [ticketStatus, setTicketStatus] = useState<TicketStatus>('unknown');
   const [cacheVersion, setCacheVersion] = useState(0);
 
-  // 中学生チケットかどうかを判定（affiliationが10000超なら中学生）
+  // 中学生チケットかどうかを判定（affiliationが100000超なら中学生）
   const isJuniorTicket = useMemo(() => {
     const affiliationNum = Number(ticket.affiliation);
-    return !isNaN(affiliationNum) && affiliationNum > 10000;
+    return !isNaN(affiliationNum) && affiliationNum > 100000;
   }, [ticket.affiliation]);
 
   const [sortMode, setSortMode] = useState<TicketListSortMode>(() => {
@@ -984,6 +984,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
           scheduleId: ticket.scheduleId,
           issueCount: 1,
           cancelCode: code,
+          affiliation: Number(ticket.affiliation) || undefined,
         },
       });
 
@@ -1173,7 +1174,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
               <span className={styles.detailValue}>
                 {ticket.affiliation === '1600'
                   ? '当日券ゲスト'
-                  : Number(ticket.affiliation) > 10000
+                  : Number(ticket.affiliation) > 100000
                     ? '中学生 ' + ticket.affiliation
                     : Math.floor(Number(ticket.affiliation) / 10000) +
                       '-' +

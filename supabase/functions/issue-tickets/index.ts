@@ -30,6 +30,8 @@ type IssueTicketsRequest = {
   cancelCode?: string;
   // 変更先の間柄ID
   targetRelationshipId?: number;
+  // 間柄変更時の元のaffiliation（フロント側から送信）
+  affiliation?: number;
 };
 
 type TicketIssueMode =
@@ -88,6 +90,7 @@ const parseRequestBody = (body: unknown): IssueTicketsRequest => {
   const issueCount = Number(parsed.issueCount);
   const cancelCodeRaw = parsed.cancelCode;
   const targetRelationshipId = Number(parsed.targetRelationshipId);
+  const affiliationRaw = parsed.affiliation;
 
   if (
     !Number.isInteger(ticketTypeId) ||
@@ -130,10 +133,10 @@ const parseRequestBody = (body: unknown): IssueTicketsRequest => {
     issueCount,
     cancelCode,
     targetRelationshipId,
+    affiliation:
+      typeof affiliationRaw === 'number' ? affiliationRaw : undefined,
   };
 };
-
-
 
 const validatePerformanceAndSchedule = (
   body: IssueTicketsRequest,
@@ -357,7 +360,7 @@ export const handleIssueTicketsRequest = async (
       ? SELF_RELATIONSHIP_ID
       : body.relationshipId;
 
-    if (!isDayTicket && !accessToken) {
+    if (!isDayTicket && !accessToken && !body.cancelCode) {
       throw new HttpError(
         401,
         '認証情報がありません。Bearerトークンを含むAuthorizationヘッダーが必要です。',
@@ -382,7 +385,7 @@ export const handleIssueTicketsRequest = async (
       } = await authClient.auth.getUser(accessToken);
 
       if (authError || !authUser) {
-        if (!isDayTicket) {
+        if (!isDayTicket && !body.cancelCode) {
           throw new HttpError(
             401,
             'ログイン情報の確認に失敗しました。正しくログインされていますか?',
@@ -412,7 +415,7 @@ export const handleIssueTicketsRequest = async (
       }
     }
 
-    if (!isDayTicket && (!user || !userRow)) {
+    if (!isDayTicket && (!user || !userRow) && !body.cancelCode) {
       throw new HttpError(
         401,
         'ログイン情報の確認に失敗しました。正しくログインされていますか?',
@@ -421,7 +424,8 @@ export const handleIssueTicketsRequest = async (
 
     if (
       !isDayTicket &&
-      (!userRow || (userRow.role !== 'student' && userRow.role !== 'junior'))
+      (!userRow || (userRow.role !== 'student' && userRow.role !== 'junior')) &&
+      !body.cancelCode
     ) {
       throw new HttpError(403, '発券可能な利用者ではありません。');
     }
@@ -432,11 +436,15 @@ export const handleIssueTicketsRequest = async (
       juniorEntryOnlyId !== undefined &&
       body.ticketTypeId === juniorEntryOnlyId;
 
-    const affiliation = isAuthenticatedStudent
-      ? Number(userRow?.affiliation ?? -1)
-      : isDayTicket
-        ? DAY_TICKET_ANONYMOUS_AFFILIATION
-        : ANONYMOUS_AFFILIATION;
+    // 間柄変更時は、フロント側から送られたaffiliationを優先的に使用
+    const affiliation =
+      body.cancelCode && body.affiliation !== undefined
+        ? Number(body.affiliation)
+        : isAuthenticatedStudent
+          ? Number(userRow?.affiliation ?? -1)
+          : isDayTicket
+            ? DAY_TICKET_ANONYMOUS_AFFILIATION
+            : ANONYMOUS_AFFILIATION;
 
     if (isAuthenticatedStudent) {
       if (!Number.isInteger(affiliation)) {
@@ -444,19 +452,23 @@ export const handleIssueTicketsRequest = async (
       }
 
       if (isJuniorUser) {
-        if (affiliation < 100000) {
+        if (affiliation < 100000 && !body.cancelCode) {
           throw new HttpError(
             400,
             '中学生アカウントの所属番号が不正です。外苑祭総務にお問い合わせください。',
           );
         }
-      } else if (affiliation < 10000 || affiliation > 39999) {
+      } else if ((affiliation < 10000 || affiliation > 39999) && !body.cancelCode) {
         throw new HttpError(
           400,
           'ユーザーデータの学年クラス番号が不正です。外苑祭総務にお問い合わせください。',
         );
       }
-    } else if (!isDayTicket) {
+    } else if (
+      !isDayTicket &&
+      !body.cancelCode &&
+      body.affiliation === undefined
+    ) {
       throw new HttpError(401, 'ログイン情報の確認に失敗しました。');
     }
 
@@ -800,10 +812,6 @@ export const handleIssueTicketsRequest = async (
         );
       }
       oldTicket = fetchedOldTicket; // 取得したチケット情報を外部スコープの変数に代入
-
-      if (oldTicket.user_id !== user?.id) {
-        throw new HttpError(403, '差し替え対象のチケットが不正です。');
-      }
 
       if (oldTicket.status !== 'valid') {
         throw new HttpError(

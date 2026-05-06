@@ -218,7 +218,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
     }
 
     const affiliationNumber = Number(ticket.affiliation);
-    if (isJuniorTicketTypeId(ticket.ticketTypeId) && affiliationNumber > 10000) {
+    if (isJuniorTicketTypeId(ticket.ticketTypeId) && affiliationNumber > 100000) {
       return `中学生 ${ticket.affiliation}`;
     }
 
