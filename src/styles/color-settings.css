@@ -44,9 +44,8 @@
   --drawer-overlay-clear: rgba(0, 0, 0, 0);
 
   /* Home page accents */
-  --home-hero-bg: #2d202d;
-  --home-hero-gradient-purple: #710a46;
-  --home-hero-gradient-crimson: #830c3c;
+  --home-hero-bg: #eb8b14;
+  --home-hero-gradient-crimson: #ff6f00;
   --home-text-shadow: rgba(0, 0, 0, 0.36);
   --home-hero-glow: rgba(246, 227, 174, 0.2);
   --home-decor-peach: rgba(244, 125, 125, 0.08);

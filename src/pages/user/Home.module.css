@@ -53,7 +53,7 @@
   background-image: repeating-conic-gradient(
     from 135deg,
     var(--home-hero-bg) 4deg,
-    var(--home-hero-gradient-purple)
+    var(--home-hero-gradient-crimson)
   );
   width: 100%;
   flex: 1;
