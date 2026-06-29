@@ -34,7 +34,7 @@
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.4",
-    "supabase": "^2.103.0",
+    "supabase": "^2.108.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.13",
