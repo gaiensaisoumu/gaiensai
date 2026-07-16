@@ -9,6 +9,7 @@ import {
 import { ScrollToTop } from './utils/ScrollToTop';
 import { useEffect } from 'preact/hooks';
 import {
+  FAQ,
   Junior,
   JuniorAccounts,
   preload,
@@ -51,6 +52,7 @@ const userPageLayout = () => (
         <Route path='/day-tickets/result' component={DayTicketIssueResult} />
         <Route path='/day-tickets' component={DayTicketIssue} />
         <Route path='/performances' component={Performances} />
+        <Route path='/faq' component={FAQ} />
         <Route path='/auth/line/callback' component={LineCallback} />
         <Route default component={NotFound} />
       </Router>
@@ -101,7 +103,10 @@ const InnerApp = () => {
       preload(DayTicketIssue, DayTicketIssueResult);
     } else if (path.startsWith('/performances')) {
       preload(Performances);
-    } else if (path.startsWith('/admin/scan')) {
+    } else if (path.startsWith('/faq')) {
+      preload(FAQ);
+    }
+    else if (path.startsWith('/admin/scan')) {
       preload(AdminLayout, ScanLayout, Scan, AdminHome);
     } else if (path.startsWith('/admin')) {
       preload(AdminLayout, AdminHome);

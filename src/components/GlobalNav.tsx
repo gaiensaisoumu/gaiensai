@@ -43,7 +43,7 @@ const GlobalNav = () => {
           <a href='#'>アクセス</a>
         </li>
         <li>
-          <a href='#'>FAQ</a>
+          <a href='/faq'>FAQ</a>
         </li>
         <li>
           <a href='https://docs.google.com/forms/d/e/1FAIpQLSeMds1IgEh7OBHcO5bYnSrUAWEp2fWdJ_yEBMyhywQrK2JgTw/viewform?usp=header'>

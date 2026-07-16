@@ -345,7 +345,7 @@ const Home = () => {
             <IoMdTrain />
             アクセス
           </a>
-          <a href='#' className={styles.buttonLink}>
+          <a href='/faq' className={styles.buttonLink}>
             <FaQuestionCircle />
             FAQ
           </a>
