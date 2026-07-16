@@ -168,4 +168,8 @@ export default defineConfig({
       ),
     },
   },
+  build: {
+    // CSSの圧縮を以前の esbuild に戻す
+    cssMinify: 'esbuild',
+  },
 });
