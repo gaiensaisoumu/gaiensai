@@ -8,6 +8,15 @@
   margin-bottom: 2rem;
 }
 
+.linedH2 {
+  border-left: 5px solid var(--primary-color);
+  padding-left: 0.5em;
+}
+
+.performancesGrid {
+  display: grid;
+}
+
 @media print {
   .subPageShell {
     padding: 1rem;

@@ -1,0 +1,230 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* 横並び設定 */
+  align-items: stretch;
+}
+
+/* タブレット〜PC向け（横幅 768px 以上） */
+@media (min-width: 48em) {
+
+  /* 768px */
+  .grid {
+    /* PCでは2カラム（2列）で並べることで、1枚あたりのカードの最大幅を制限する */
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 大型PC向け（横幅 1024px 以上） */
+@media (min-width: 64em) {
+
+  /* 1024px */
+  .grid {
+    /* 画面がさらに広い場合は3カラム（3列）にして、カードが太くなりすぎるのを防ぐ */
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
+
+/* カードを縦レイアウトにし、画像を上部に配置する */
+/* ─── 📸 背景画像カードのコアスタイル ─── */
+.card {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 !important;
+  border: 1px solid var(--translucent-w-bg-color);
+  border-radius: 0.75rem;
+  /* 下半分の基本背景は「白」 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* ヘッダー画像の角丸をカードに合わせる */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+}
+
+/* 背景に敷き詰める画像 */
+.cardBgImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.2s ease;
+  /* ◀ 画像本来の比率を維持して、横幅いっぱいに引き伸ばしつつ高さを決定 */
+}
+
+.card:hover .cardBgImage {
+  transform: scale(1.05);
+  /* ホバー時に背景画像を少しズーム */
+}
+
+/*
+ * 🖤 グラデーションオーバーレイ
+ * 画像の上に暗いグラデーションを重ねることで、白い文字をハッキリ読めるようにします
+ */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  /*
+     * to bottom: 上から下に向かってグラデーション
+     * 1. 開始地点（上端 0%）: ほぼ透明な黒（rgbaのアルファ値を 0 に近づける）
+     * 2. 中間地点（50%） : ほんのり暗くして自然に繋ぐ
+     * 3. 終了地点（下端 100%）: 文字がはっきり読めるように濃い黒（0.7〜0.85程度）
+     */
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      /* 上部は完全に透明 */
+      rgba(0, 0, 0, 0.3) 50%,
+      /* 中間はうっすら */
+      rgba(0, 0, 0, 0.7) 75%,
+      rgba(0, 0, 0, 0.9) 100%
+      /* 下部はしっかり黒くして、上に載る白文字を浮かび上がらせる */
+    );
+
+  z-index: 2;
+  pointer-events: none;
+  /* 万が一、画像や下の要素をクリック・選択する際の邪魔をしないようにする記述 */
+
+}
+
+/* ヘッダー内の文字コンテンツ（画像の上に重ねる） */
+.headerContent {
+  position: absolute;
+  bottom: 0;
+  /* ◀【超重要】画像の一番下に文字をピタッと配置 */
+  left: 0;
+  width: 100%;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  z-index: 3;
+  /* 暗幕や画像の上に載せる */
+}
+
+/* 画像がない時のスタイル */
+
+.headerContent.noImage {
+  position: static;
+  padding-bottom: 0;
+}
+
+.headerMetaData {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.cardHeader {
+  position: relative;
+  /* 子要素の absolute (overlayや文字) の基準にします */
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.yearBadge {
+  background-color: var(--main-bg-color);
+  color: var(--sub-text-color);
+  backdrop-filter: blur(4px);
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.className {
+  font-size: 1.7em;
+  color: var(--main-text-color);
+  font-weight: 600;
+}
+
+.cardTitle {
+  font-size: 1.7em;
+  font-weight: 700;
+  color: var(--heading-text-color);
+  margin: 0.5rem 0.25rem !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* 受付ステータス */
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+}
+
+.statusAccepting {
+  background-color: var(--success-bg-color);
+  color: var(--success-text-color);
+}
+
+.statusClosed {
+  background-color: var(--error-bg-color);
+  color: var(--error-text-color);
+}
+
+.cardBody {
+  margin: 1em;
+  /* 縦方向にアイテムを並べるFlexboxにする */
+  display: flex;
+  flex-direction: column;
+
+  /*
+     * ◀【最重要】flex-grow: 1 を指定することで、
+     * カード全体の高さが揃ったときに「余った縦方向のスペース」を
+     * この cardBody だけがすべて引き受けて下に伸びるようになります。
+     */
+  flex-grow: 1;
+}
+
+.description {
+  font-size: 0.875rem;
+  margin: 0 0 1.5rem !important;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  flex-grow: 1;
+  color: var(--bright-sub-text-color);
+  /* カード内の余白を埋めて、フッターの位置を揃える */
+}
+
+/* 定員情報エリア */
+.footer {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--sub-text-color);
+  border-top: 1px solid var(--table-border-color);
+  padding-top: 1rem;
+}
+
+.capacityValue {
+  font-weight: 600;
+  color: var(--main-text-color);
+}
+
+/* 共通ユーティリティ（ローディング・エラー・空状態） */
+.stateMessage {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.errorMessage {
+  color: #ef4444;
+}
