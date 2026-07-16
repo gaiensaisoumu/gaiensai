@@ -34,7 +34,7 @@
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
-    "prettier": "^3.9.1",
+    "prettier": "^3.9.5",
     "supabase": "^2.109.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.61.1",
