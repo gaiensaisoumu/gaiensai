@@ -19,6 +19,12 @@ import type {
 } from '../../../types/Issue.types';
 import { formatDateText } from '../../../utils/formatDateText';
 import styles from '../students/Issue.module.css';
+import {
+  getJuniorApplicationDayVisibility,
+  parseJuniorApplicationDaySelection,
+  resolveJuniorApplicationDays,
+  serializeJuniorApplicationDaySelection,
+} from './applicationDay';
 
 const PANEL_ANIMATION_MS = 360;
 const ADMISSION_ONLY_TICKET_NAME = '入場専用券';
@@ -53,11 +59,18 @@ const calculateClassJuniorRemaining = ({
   isJuniorReleased: boolean;
 }): number => {
   if (isJuniorReleased) {
-    return Math.max(totalCapacity - issuedGeneral - issuedJunior - issuedOther, 0);
+    return Math.max(
+      totalCapacity - issuedGeneral - issuedJunior - issuedOther,
+      0,
+    );
   }
 
-  const generalRemainingRaw = totalCapacity - juniorCapacity - issuedGeneral - issuedOther;
-  return Math.max(juniorCapacity - issuedJunior - Math.max(-generalRemainingRaw, 0), 0);
+  const generalRemainingRaw =
+    totalCapacity - juniorCapacity - issuedGeneral - issuedOther;
+  return Math.max(
+    juniorCapacity - issuedJunior - Math.max(-generalRemainingRaw, 0),
+    0,
+  );
 };
 
 const readFunctionErrorMessage = async (error: unknown): Promise<string> => {
@@ -127,6 +140,12 @@ const Issue = () => {
   const [juniorIssueCost, setJuniorIssueCost] = useState(1);
   const [remainingJuniorIssueCapacity, setRemainingJuniorIssueCapacity] =
     useState<number | null>(null);
+  const [classApplicationDays, setClassApplicationDays] = useState<Array<
+    'day1' | 'day2'
+  > | null>(null);
+  const [gymApplicationDays, setGymApplicationDays] = useState<Array<
+    'day1' | 'day2'
+  > | null>(null);
   const [leavingStep, setLeavingStep] = useState<Step | null>(null);
   const [isForward, setIsForward] = useState(true);
   const animationTimerRef = useRef<number | null>(null);
@@ -150,6 +169,98 @@ const Issue = () => {
       }
     };
     void loadIssuingState();
+  }, []);
+
+  useEffect(() => {
+    const loadApplicationDay = async () => {
+      const { classDay, gymDay } = resolveJuniorApplicationDays(
+        window.location.search,
+      );
+      const resolvedClassDays = classDay ?? gymDay;
+      const resolvedGymDays = gymDay ?? classDay;
+
+      if (resolvedClassDays && resolvedClassDays.length > 0) {
+        setClassApplicationDays(resolvedClassDays);
+      }
+
+      if (resolvedGymDays && resolvedGymDays.length > 0) {
+        setGymApplicationDays(resolvedGymDays);
+      }
+
+      if (resolvedClassDays || resolvedGymDays) {
+        const serializedValue = serializeJuniorApplicationDaySelection(
+          resolvedClassDays,
+          resolvedGymDays,
+        );
+        if (serializedValue) {
+          window.localStorage.setItem(
+            'junior_application_day',
+            serializedValue,
+          );
+        }
+      }
+
+      if (resolvedClassDays || resolvedGymDays) {
+        return;
+      }
+
+      const storedSelection = parseJuniorApplicationDaySelection(
+        window.localStorage.getItem('junior_application_day'),
+      );
+      const storedApplicationDays =
+        storedSelection.classDay ?? storedSelection.gymDay;
+      if (storedApplicationDays && storedApplicationDays.length > 0) {
+        setClassApplicationDays(
+          storedSelection.classDay
+        );
+        setGymApplicationDays(storedSelection.gymDay);
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('application_day')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        return;
+      }
+
+      const databaseSelection = parseJuniorApplicationDaySelection(
+        data?.application_day,
+      );
+      const databaseApplicationDays =
+        databaseSelection.classDay ?? databaseSelection.gymDay;
+      if (databaseApplicationDays && databaseApplicationDays.length > 0) {
+        setClassApplicationDays(
+          databaseSelection.classDay,
+        );
+        setGymApplicationDays(
+          databaseSelection.gymDay,
+        );
+        const serializedValue = serializeJuniorApplicationDaySelection(
+          databaseSelection.classDay ?? databaseApplicationDays,
+          databaseSelection.gymDay ?? databaseApplicationDays,
+        );
+        if (serializedValue) {
+          window.localStorage.setItem(
+            'junior_application_day',
+            serializedValue,
+          );
+        }
+      }
+    };
+
+    void loadApplicationDay();
   }, []);
 
   useEffect(() => {
@@ -281,6 +392,15 @@ const Issue = () => {
     void loadTicketTypes();
   }, []);
 
+  const applicationDayVisibility = useMemo(
+    () =>
+      getJuniorApplicationDayVisibility({
+        classDay: classApplicationDays,
+        gymDay: gymApplicationDays,
+      }),
+    [classApplicationDays, gymApplicationDays],
+  );
+
   const activeTicketTypes = useMemo(() => {
     if (!issueControls) {
       return [];
@@ -288,27 +408,41 @@ const Issue = () => {
     const hasReachedCapacity =
       remainingJuniorIssueCapacity !== null &&
       remainingJuniorIssueCapacity < juniorIssueCost;
-    return ticketTypes.map((ticketType) => {
-      let isActive = false;
+    const visibleTicketTypes = ticketTypes.filter((ticketType) => {
       if (ticketType.id === 5) {
-        isActive =
-          issueControls.junior_class_mode !== 'off' && !hasReachedCapacity;
-      } else if (ticketType.id === 6) {
-        isActive =
-          issueControls.junior_gym_mode !== 'off' && !hasReachedCapacity;
-      } else if (ticketType.id === JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID) {
-        isActive =
-          issueControls.junior_entry_only_mode !== 'off' &&
-          !hasIssuedJuniorEntryOnlyTicket;
+        const isClassTicketAllowed =
+          issueControls.junior_class_mode !== 'off' &&
+          !hasReachedCapacity &&
+          applicationDayVisibility.showClassPerformances;
+        return isClassTicketAllowed;
       }
-      return { ...ticketType, is_active: isActive };
+      if (ticketType.id === 6) {
+        const isGymTicketAllowed =
+          issueControls.junior_gym_mode !== 'off' &&
+          !hasReachedCapacity &&
+          applicationDayVisibility.showGymPerformances;
+        return isGymTicketAllowed;
+      }
+      if (ticketType.id === JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID) {
+        return (
+          issueControls.junior_entry_only_mode !== 'off' &&
+          !hasIssuedJuniorEntryOnlyTicket
+        );
+      }
+      return false;
     });
+
+    return visibleTicketTypes.map((ticketType) => ({
+      ...ticketType,
+      is_active: true,
+    }));
   }, [
     ticketTypes,
     issueControls,
     hasIssuedJuniorEntryOnlyTicket,
     remainingJuniorIssueCapacity,
     juniorIssueCost,
+    applicationDayVisibility,
   ]);
 
   useEffect(() => {
@@ -489,6 +623,52 @@ const Issue = () => {
     () => activeTicketTypes.some((ticketType) => ticketType.is_active),
     [activeTicketTypes],
   );
+  const visiblePerformanceFilter = useMemo(() => {
+    if (!classApplicationDays || classApplicationDays.length === 0) {
+      return null;
+    }
+
+    return (scheduleId: number, roundName: string) => {
+      const day1Schedules = [1, 2, 3, 4];
+      const day2Schedules = [5, 6, 7, 8];
+      const allowedScheduleIds = [
+        ...(classApplicationDays.includes('day1') ? day1Schedules : []),
+        ...(classApplicationDays.includes('day2') ? day2Schedules : []),
+      ];
+      if (!allowedScheduleIds.includes(scheduleId)) {
+        return false;
+      }
+      if (
+        classApplicationDays.includes('day1') &&
+        classApplicationDays.includes('day2')
+      ) {
+        return true;
+      }
+      if (classApplicationDays.includes('day1')) {
+        return !roundName.includes('2日目');
+      }
+      return roundName.includes('2日目');
+    };
+  }, [classApplicationDays]);
+
+  const visibleGymPerformanceFilter = useMemo(() => {
+    if (!gymApplicationDays || gymApplicationDays.length === 0) {
+      return null;
+    }
+
+    return (_scheduleId: number, roundName: string) => {
+      if (
+        gymApplicationDays.includes('day1') &&
+        gymApplicationDays.includes('day2')
+      ) {
+        return true;
+      }
+      if (gymApplicationDays.includes('day1')) {
+        return !roundName.includes('2日目');
+      }
+      return roundName.includes('2日目');
+    };
+  }, [gymApplicationDays]);
   const isIssueReceptionStopped =
     !isTicketIssuingEnabled || !hasAnyActiveTicketType;
   const isAtJuniorIssueLimit =
@@ -751,6 +931,12 @@ const Issue = () => {
             selectedPerformance={selectedPerformance}
             selectedCellKey={selectedCellKey}
             classRemainingMode='junior'
+            classScheduleFilter={visiblePerformanceFilter ?? undefined}
+            gymScheduleFilter={visibleGymPerformanceFilter ?? undefined}
+            showClassPerformances={
+              applicationDayVisibility.showClassPerformances
+            }
+            showGymPerformances={applicationDayVisibility.showGymPerformances}
             onSelectPerformance={setSelectedPerformance}
           />
         </div>
@@ -840,11 +1026,7 @@ const Issue = () => {
               type='button'
               className={styles.generateButton}
               onClick={() => void handleIssue()}
-              disabled={
-                isIssuing ||
-                !canSubmit ||
-                isIssueReceptionStopped
-              }
+              disabled={isIssuing || !canSubmit || isIssueReceptionStopped}
               style={step !== 3 ? { display: 'none' } : undefined}
             >
               {isIssuing ? '発券中...' : '発券する'}

@@ -51,6 +51,14 @@ const Junior = () => {
     return String(error);
   };
 
+  const preserveQuery = (targetPath: string): string => {
+    const search = window.location.search;
+    if (!search || targetPath.includes('?')) {
+      return targetPath;
+    }
+    return `${targetPath}${search}`;
+  };
+
   const loadUserProfile = async (userId: string) => {
     const { data, error }: { data: UserData; error: unknown } = await supabase
       .from('users')
@@ -93,7 +101,7 @@ const Junior = () => {
 
       if (!nextSession) {
         setUserData(null);
-        route('/junior/login');
+        route(preserveQuery('/junior/login'));
         return;
       }
 
@@ -145,12 +153,12 @@ const Junior = () => {
     const isStudentAccount = isStudentAccountByEmail(session.user.email);
 
     if (userData && userData.affiliation < JUNIOR_AFFILIATION_THRESHOLD) {
-      route('/students');
+      route(preserveQuery('/students'));
       return;
     }
 
     if (!userData && isStudentAccount) {
-      route('/students');
+      route(preserveQuery('/students'));
       return;
     }
 
@@ -158,7 +166,7 @@ const Junior = () => {
       userData &&
       (path === '/junior' || path === '/junior/login' || path === '/junior/')
     ) {
-      route('/junior/mypage');
+      route(preserveQuery('/junior/mypage'));
     }
   }, [path, profileError, route, session, userData]);
 
@@ -197,8 +205,8 @@ const Junior = () => {
         <LoadingSpinner />
         <p>
           しばらく待ってもページが遷移しない場合は、
-          <a href='/junior/login'>ログインページ</a>または
-          <a href='/junior/mypage'>マイページ</a>
+          <a href={preserveQuery('/junior/login')}>ログインページ</a>または
+          <a href={preserveQuery('/junior/mypage')}>マイページ</a>
           のいずれかに直接アクセスしてみてください。
         </p>
         <p>不明点がありましたら、お気軽に外苑祭総務へお問い合わせください。</p>

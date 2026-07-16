@@ -4,6 +4,11 @@ import { useLocation } from 'preact-iso';
 import { supabase } from '../../../lib/supabase';
 import { useTitle } from '../../../hooks/useTitle';
 import type { Session } from '../../../types/types';
+import {
+  parseJuniorApplicationDaySelection,
+  resolveJuniorApplicationDay,
+  serializeJuniorApplicationDaySelection,
+} from './applicationDay';
 
 import styles from '../students/Login.module.css';
 import subPageStyles from '../../../styles/sub-pages.module.css';
@@ -39,6 +44,24 @@ const JuniorLogin = () => {
       route('/junior');
     }
   }, [route, session]);
+
+  useEffect(() => {
+    const applicationDay = resolveJuniorApplicationDay(window.location.search);
+    if (applicationDay) {
+      window.localStorage.setItem('junior_application_day', applicationDay);
+    }
+
+    const { classDay, gymDay } = parseJuniorApplicationDaySelection(
+      window.localStorage.getItem('junior_application_day'),
+    );
+    const serializedValue = serializeJuniorApplicationDaySelection(
+      classDay ?? ([applicationDay].filter(Boolean) as Array<'day1' | 'day2'>),
+      gymDay ?? ([applicationDay].filter(Boolean) as Array<'day1' | 'day2'>),
+    );
+    if (serializedValue) {
+      window.localStorage.setItem('junior_application_day', serializedValue);
+    }
+  }, []);
 
   const handleLogin = async (event: Event) => {
     event.preventDefault();
@@ -133,10 +156,7 @@ const JuniorLogin = () => {
             </label>
           </fieldset>
 
-          <button
-            className={styles.loginButton}
-            disabled={loading}
-          >
+          <button className={styles.loginButton} disabled={loading}>
             {loading ? <span>読み込み中</span> : <span>ログイン</span>}
           </button>
         </form>

@@ -11,6 +11,10 @@ type IssueStepPerformanceProps = {
   classRemainingMode?: 'general' | 'total' | 'junior';
   restrictedClassName?: string | null;
   restrictedGroupNames?: string[] | null;
+  classScheduleFilter?: (scheduleId: number, roundName: string) => boolean;
+  gymScheduleFilter?: (scheduleId: number, roundName: string) => boolean;
+  showClassPerformances?: boolean;
+  showGymPerformances?: boolean;
   onSelectPerformance: (selection: SelectedPerformance) => void;
 };
 
@@ -21,29 +25,39 @@ const IssueStepPerformance = ({
   classRemainingMode = 'general',
   restrictedClassName = null,
   restrictedGroupNames = null,
+  classScheduleFilter,
+  gymScheduleFilter,
+  showClassPerformances = true,
+  showGymPerformances = true,
   onSelectPerformance,
 }: IssueStepPerformanceProps) => {
   return (
     <NormalSection>
       <h2 className={styles.sectionTitle}>2. 公演の選択</h2>
-      <p>
-        下の表から、発券したい公演を選択してください。
-      </p>
+      <p>下の表から、発券したい公演を選択してください。</p>
       {isGymPerformanceTicket ? (
-        <GymPerformancesTable
-          onAvailableCellClick={onSelectPerformance}
-          restrictedGroupNames={restrictedGroupNames}
-          selectedCellKey={selectedCellKey}
-          filterAccepting={true}
-        />
-      ) : (
+        showGymPerformances ? (
+          <GymPerformancesTable
+            onAvailableCellClick={onSelectPerformance}
+            restrictedGroupNames={restrictedGroupNames}
+            selectedCellKey={selectedCellKey}
+            filterAccepting={true}
+            scheduleFilter={gymScheduleFilter}
+          />
+        ) : (
+          <p>この申込日時では体育館公演を選択できません。</p>
+        )
+      ) : showClassPerformances ? (
         <PerformancesTable
           remainingMode={classRemainingMode}
           restrictedClassName={restrictedClassName}
           onAvailableCellClick={onSelectPerformance}
           selectedCellKey={selectedCellKey}
           filterAccepting={true}
+          scheduleFilter={classScheduleFilter}
         />
+      ) : (
+        <p>この申込日時ではクラス公演を選択できません。</p>
       )}
       {selectedPerformance && (
         <p className={styles.selectedText}>

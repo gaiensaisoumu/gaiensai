@@ -7,9 +7,17 @@ type ModalProps = {
   headingText: string;
   buttonText: string;
   children?: preact.ComponentChildren;
+  showCancelButton?: boolean;
 };
 
-const Modal = ({ setIsOpen, handleAction, headingText, buttonText, children }: ModalProps) => {
+const Modal = ({
+  setIsOpen,
+  handleAction,
+  headingText,
+  buttonText,
+  children,
+  showCancelButton = true,
+}: ModalProps) => {
   const [isDoingAction, setIsDoingAction] = useState(false);
   const handleOnClick = () => {
     setIsDoingAction(true);
@@ -34,14 +42,16 @@ const Modal = ({ setIsOpen, handleAction, headingText, buttonText, children }: M
         </h2>
         {children}
         <div className={styles.modalActions}>
-          <button
-            type='button'
-            className={styles.modalCancelButton}
-            onClick={() => setIsOpen(false)}
-            disabled={isDoingAction}
-          >
-            キャンセル
-          </button>
+          {showCancelButton ? (
+            <button
+              type='button'
+              className={styles.modalCancelButton}
+              onClick={() => setIsOpen(false)}
+              disabled={isDoingAction}
+            >
+              キャンセル
+            </button>
+          ) : null}
           <button
             type='button'
             className={styles.modalActionButton}

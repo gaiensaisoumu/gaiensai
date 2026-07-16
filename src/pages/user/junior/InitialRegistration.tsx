@@ -1,10 +1,15 @@
 import { useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { supabase } from '../../../lib/supabase';
+import {
+  resolveJuniorApplicationDays,
+  serializeJuniorApplicationDaySelection,
+} from './applicationDay';
 import { createClient } from '@supabase/supabase-js';
 import styles from '../students/InitialRegistration.module.css';
 import { useTitle } from '../../../hooks/useTitle';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import Modal from '../../../components/ui/Modal';
 import NormalSection from '../../../components/ui/NormalSection';
 
 type InitialRegistrationProps = {
@@ -40,6 +45,13 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
   const [birthdayYear, setBirthdayYear] = useState('');
   const [birthdayMonth, setBirthdayMonth] = useState('');
   const [birthdayDay, setBirthdayDay] = useState('');
+  const [showApplicationDayErrorModal, setShowApplicationDayErrorModal] =
+    useState(() => {
+      const { classDay, gymDay } = resolveJuniorApplicationDays(
+        window.location.search,
+      );
+      return classDay === null && gymDay === null;
+    });
 
   useTitle('初回登録 - 中学生用ページ');
 
@@ -176,9 +188,26 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
     setErrorMessage(null);
+
+    const { classDay, gymDay } = resolveJuniorApplicationDays(
+      window.location.search,
+    );
+    if (!classDay && !gymDay) {
+      setShowApplicationDayErrorModal(true);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const storedApplicationDay = serializeJuniorApplicationDaySelection(
+        classDay ?? null,
+        gymDay ?? null,
+      );
+      const normalizedApplicationDay =
+        storedApplicationDay ??
+        window.localStorage.getItem('junior_application_day');
       let registerError;
 
       // アカウント分割が選択されている場合
@@ -217,12 +246,14 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
           {
             p_parent_auth_id: authData.user.id,
             p_parent_email: parentEmail,
+            p_application_day: normalizedApplicationDay,
           },
         );
         registerError = rpcError;
       } else {
         const { error } = await supabase.rpc('register_junior', {
           junior_usage_type: juniorUsageType,
+          p_application_day: normalizedApplicationDay,
         });
         registerError = error;
       }
@@ -387,6 +418,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
   };
 
   const handleLogout = async () => {
+    setShowApplicationDayErrorModal(false);
     await supabase.auth.signOut();
   };
 
@@ -396,7 +428,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
       <p className={styles.description}>初回は利用形態の設定をお願いします。</p>
       <form className={styles.form} onSubmit={handleSubmit}>
         <NormalSection>
-          <h2 style={{marginBottom: '0.5rem'}}>利用形態</h2>
+          <h2 style={{ marginBottom: '0.5rem' }}>利用形態</h2>
           <div className={styles.usageTypeSelection}>
             <label
               className={`${styles.usageTypeButton} ${
@@ -646,6 +678,20 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
           </div>
         </div>
       )}
+
+      {showApplicationDayErrorModal ? (
+        <Modal
+          setIsOpen={setShowApplicationDayErrorModal}
+          handleAction={handleLogout}
+          headingText='申し込み日時の指定エラー'
+          buttonText='ログアウト'
+          showCancelButton={false}
+        >
+          <p className={styles.modalText}>
+            申し込み日時の情報を取得できませんでした。当選メールに記載されているURLからもう一度アクセスをお願いします。
+          </p>
+        </Modal>
+      ) : null}
 
       {loading && !accountSplit.showParentForm ? (
         <div className={styles.loadingOverlay} role='status' aria-live='polite'>

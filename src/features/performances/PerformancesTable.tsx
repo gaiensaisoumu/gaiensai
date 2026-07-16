@@ -36,6 +36,7 @@ type PerformancesTableProps = {
   showToggleRemainingMode?: boolean;
   restrictedClassName?: string | null;
   filterAccepting?: boolean;
+  scheduleFilter?: (scheduleId: number, roundName: string) => boolean;
 };
 
 const PerformancesTable = ({
@@ -47,6 +48,7 @@ const PerformancesTable = ({
   showToggleRemainingMode = false,
   restrictedClassName = null,
   filterAccepting = false,
+  scheduleFilter,
 }: PerformancesTableProps) => {
   const autoSelectedCellKeyRef = useRef<string | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
@@ -183,7 +185,12 @@ const PerformancesTable = ({
           !restrictedClassName ||
           performance.class_name === restrictedClassName,
       );
-      const loadedSchedules = (scheduleData ?? []) as PerformanceSchedule[];
+      const loadedSchedules = (
+        (scheduleData ?? []) as PerformanceSchedule[]
+      ).filter(
+        (schedule) =>
+          !scheduleFilter || scheduleFilter(schedule.id, schedule.round_name),
+      );
 
       const performanceIds = loadedPerformances.map((p) => p.id);
       const scheduleIds = loadedSchedules.map((s) => s.id);
@@ -246,8 +253,7 @@ const PerformancesTable = ({
           const juniorCap = p.junior_capacity ?? 0;
           const generalCap = Math.max(totalCap - juniorCap, 0);
           const totalIssued = stat.general + stat.junior + stat.other;
-          const generalRemainingRaw =
-            generalCap - stat.general - stat.other;
+          const generalRemainingRaw = generalCap - stat.general - stat.other;
 
           let remaining = 0;
           if (currentRemainingMode === 'total') {
@@ -255,9 +261,7 @@ const PerformancesTable = ({
           } else if (currentRemainingMode === 'junior') {
             remaining = isJuniorReleased
               ? totalCap - totalIssued
-              : juniorCap -
-                stat.junior -
-                Math.max(-generalRemainingRaw, 0);
+              : juniorCap - stat.junior - Math.max(-generalRemainingRaw, 0);
           } else {
             remaining = isJuniorReleased
               ? totalCap - totalIssued
@@ -282,7 +286,12 @@ const PerformancesTable = ({
     return () => {
       isMounted = false;
     };
-  }, [currentRemainingMode, restrictedClassName, filterAccepting]);
+  }, [
+    currentRemainingMode,
+    restrictedClassName,
+    filterAccepting,
+    scheduleFilter,
+  ]);
 
   const statusByKey = useMemo(() => {
     const map = new Map<string, 'circle' | 'triangle' | 'cross'>();

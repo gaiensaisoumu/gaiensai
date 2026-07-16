@@ -26,6 +26,7 @@ type GymPerformancesTableProps = {
   selectedCellKey?: string;
   restrictedGroupNames?: string[] | null;
   filterAccepting?: boolean;
+  scheduleFilter?: (scheduleId: number, roundName: string) => boolean;
 };
 
 const GymPerformancesTable = ({
@@ -35,6 +36,7 @@ const GymPerformancesTable = ({
   selectedCellKey,
   restrictedGroupNames = null,
   filterAccepting = false,
+  scheduleFilter,
 }: GymPerformancesTableProps) => {
   const [performances, setPerformances] = useState<GymPerformanceRow[]>([]);
   const [selectedGroupName, setSelectedGroupName] = useState<string | 'all'>(
@@ -79,8 +81,9 @@ const GymPerformancesTable = ({
         (performanceData ?? []) as GymPerformanceRow[]
       ).filter(
         (performance) =>
-          !restrictedGroupNames ||
-          restrictedGroupNames.includes(performance.group_name),
+          (!restrictedGroupNames ||
+            restrictedGroupNames.includes(performance.group_name)) &&
+          (!scheduleFilter || scheduleFilter(0, performance.round_name)),
       );
       setPerformances(loadedPerformances);
 
@@ -133,7 +136,7 @@ const GymPerformancesTable = ({
     };
 
     void load();
-  }, [restrictedGroupNames, filterAccepting]);
+  }, [restrictedGroupNames, filterAccepting, scheduleFilter]);
 
   const groupNames = useMemo(() => {
     const unique = new Set<string>();

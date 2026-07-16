@@ -20,6 +20,11 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { supabase } from '../../../lib/supabase';
 import { formatTicketTypeLabel } from '../../../features/tickets/formatTicketTypeLabel';
 import { resolveJuniorRelationshipName } from '../../../features/tickets/juniorRelationship';
+import {
+  parseJuniorApplicationDaySelection,
+  resolveJuniorApplicationDays,
+  serializeJuniorApplicationDaySelection,
+} from './applicationDay';
 
 type TicketSnapshot = {
   performances?: Array<{
@@ -53,6 +58,12 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
     useState<TicketListSortMode>('recent');
   const [hasReachedJuniorIssueLimit, setHasReachedJuniorIssueLimit] =
     useState(false);
+  const [classApplicationDays, setClassApplicationDays] = useState<Array<
+    'day1' | 'day2'
+  > | null>(null);
+  const [gymApplicationDays, setGymApplicationDays] = useState<Array<
+    'day1' | 'day2'
+  > | null>(null);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -65,6 +76,92 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
     !isTicketIssuingEnabled ||
     !hasAnyActiveInviteTicketType ||
     hasReachedJuniorIssueLimit;
+
+  useEffect(() => {
+    const loadApplicationDay = async () => {
+      const { classDay, gymDay } = resolveJuniorApplicationDays(
+        window.location.search,
+      );
+      const resolvedClassDays = classDay;
+      const resolvedGymDays = gymDay;
+
+      if (resolvedClassDays && resolvedClassDays.length > 0) {
+        setClassApplicationDays(resolvedClassDays);
+      }
+
+      if (resolvedGymDays && resolvedGymDays.length > 0) {
+        setGymApplicationDays(resolvedGymDays);
+      }
+
+      if (resolvedClassDays || resolvedGymDays) {
+        const serializedValue = serializeJuniorApplicationDaySelection(
+          resolvedClassDays,
+          resolvedGymDays,
+        );
+        if (serializedValue) {
+          window.localStorage.setItem(
+            'junior_application_day',
+            serializedValue,
+          );
+        }
+      }
+
+      if (resolvedClassDays || resolvedGymDays) {
+        return;
+      }
+
+      const storedSelection = parseJuniorApplicationDaySelection(
+        window.localStorage.getItem('junior_application_day'),
+      );
+      const storedApplicationDays =
+        storedSelection.classDay ?? storedSelection.gymDay;
+      if (storedApplicationDays && storedApplicationDays.length > 0) {
+        setClassApplicationDays(storedSelection.classDay);
+        setGymApplicationDays(storedSelection.gymDay);
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('application_day')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        return;
+      }
+
+      const databaseSelection = parseJuniorApplicationDaySelection(
+        data?.application_day,
+      );
+      const databaseApplicationDays =
+        databaseSelection.classDay ?? databaseSelection.gymDay;
+      if (databaseApplicationDays && databaseApplicationDays.length > 0) {
+        setClassApplicationDays(databaseSelection.classDay);
+        setGymApplicationDays(databaseSelection.gymDay);
+        const serializedValue = serializeJuniorApplicationDaySelection(
+          databaseSelection.classDay,
+          databaseSelection.gymDay,
+        );
+        if (serializedValue) {
+          window.localStorage.setItem(
+            'junior_application_day',
+            serializedValue,
+          );
+        }
+      }
+    };
+
+    void loadApplicationDay();
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -171,11 +268,11 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
         return;
       }
 
-      const maxIssueCapacity = usageType === 1
-          ? maxTicketsPerJuniorUser * 2
-          : maxTicketsPerJuniorUser;
+      const maxIssueCapacity =
+        usageType === 1 ? maxTicketsPerJuniorUser * 2 : maxTicketsPerJuniorUser;
       const existingIssueCapacity = Number(count ?? 0);
-      const hasReachedLimit = existingIssueCapacity >= maxIssueCapacity && entryOnlyCount !== 0;
+      const hasReachedLimit =
+        existingIssueCapacity >= maxIssueCapacity && entryOnlyCount !== 0;
 
       setHasReachedJuniorIssueLimit(hasReachedLimit);
     };
@@ -467,19 +564,87 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
       <NormalSection>
         <h2>公演空き状況</h2>
         {ticketLoading ? <LoadingSpinner /> : null}
-        <h3>クラス公演</h3>
-        <PerformancesTable
-          enableIssueJump={true}
-          issuePath='/junior/issue'
-          remainingMode='junior'
-          filterAccepting={true}
-        />
-        <h3>体育館公演</h3>
-        <GymPerformancesTable
-          enableIssueJump={true}
-          issuePath='/junior/issue'
-          filterAccepting={true}
-        />
+        {(() => {
+          const showClassPerformances =
+            !gymApplicationDays ||
+            gymApplicationDays.length === 0 ||
+            (classApplicationDays && classApplicationDays.length > 0);
+          const showGymPerformances =
+            !classApplicationDays ||
+            classApplicationDays.length === 0 ||
+            (gymApplicationDays && gymApplicationDays.length > 0);
+
+          return (
+            <>
+              {showClassPerformances ? (
+                <>
+                  <h3>クラス公演</h3>
+                  <PerformancesTable
+                    enableIssueJump={true}
+                    issuePath='/junior/issue'
+                    remainingMode='junior'
+                    filterAccepting={true}
+                    scheduleFilter={
+                      classApplicationDays && classApplicationDays.length > 0
+                        ? (scheduleId, roundName) => {
+                            const day1Schedules = [1, 2, 3, 4];
+                            const day2Schedules = [5, 6, 7, 8];
+                            const allowedScheduleIds = [
+                              ...(classApplicationDays.includes('day1')
+                                ? day1Schedules
+                                : []),
+                              ...(classApplicationDays.includes('day2')
+                                ? day2Schedules
+                                : []),
+                            ];
+                            if (!allowedScheduleIds.includes(scheduleId)) {
+                              return false;
+                            }
+                            if (
+                              classApplicationDays.includes('day1') &&
+                              classApplicationDays.includes('day2')
+                            ) {
+                              return true;
+                            }
+                            if (classApplicationDays.includes('day1')) {
+                              return !roundName.includes('2日目');
+                            }
+                            return roundName.includes('2日目');
+                          }
+                        : undefined
+                    }
+                  />
+                </>
+              ) : null}
+              {showGymPerformances ? (
+                <>
+                  <h3>体育館公演</h3>
+                  <GymPerformancesTable
+                    enableIssueJump={true}
+                    issuePath='/junior/issue'
+                    filterAccepting={true}
+                    scheduleFilter={
+                      gymApplicationDays && gymApplicationDays.length > 0
+                        ? (_scheduleId, roundName) => {
+                            if (
+                              gymApplicationDays.includes('day1') &&
+                              gymApplicationDays.includes('day2')
+                            ) {
+                              return true;
+                            }
+                            if (gymApplicationDays.includes('day1')) {
+                              return !roundName.includes('2日目');
+                            }
+                            return roundName.includes('2日目');
+                          }
+                        : undefined
+                    }
+                  />
+                </>
+              ) : null}
+            </>
+          );
+        })()}
       </NormalSection>
       <section>
         <button onClick={handleLogout} className={dashboardStyles.logoutBtn}>

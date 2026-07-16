@@ -21,6 +21,7 @@ export type UserData = {
   email: string;
   affiliation: number;
   junior_usage_type?: number;
+  application_day?: string | null;
 } | null;
 
 export type EventConfig = {
