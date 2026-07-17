@@ -23,6 +23,7 @@ const TimeTable = () => {
   useTitle('タイムテーブル');
   const [classSchedules, setClassSchedules] = useState<ClassSchedule[]>([]);
   const [gymPerformances, setGymPerformances] = useState<GymPerformance[]>([]);
+  const [showLength, setShowLength] = useState<number>(45); // クラス公演の所要時間（分）
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,9 +50,18 @@ const TimeTable = () => {
         if (gymError) {
           throw gymError;
         }
+        const { data: show_length, error: configError } = await supabase
+          .from('configs')
+          .select('show_length')
+          .single();
+
+        if (configError) {
+          alert('設定データの取得に失敗しました。' + configError);
+        }
 
         setClassSchedules(classData || []);
         setGymPerformances(gymData || []);
+        setShowLength(show_length?.show_length || 45); // デフォルト値を45分に設定
       } catch (err) {
         setError('スケジュールデータの読み込みに失敗しました。');
       } finally {
@@ -83,11 +93,12 @@ const TimeTable = () => {
   return (
     <>
       <h1 className={styles.pageTitle}>タイムテーブル</h1>
-        {/* ─── タイムテーブルの呼び出し ─── */}
-        <TimeTableContent
-          classSchedules={classSchedules}
-          gymPerformances={gymPerformances}
-        />
+      {/* ─── タイムテーブルの呼び出し ─── */}
+      <TimeTableContent
+        classSchedules={classSchedules}
+        gymPerformances={gymPerformances}
+        showLength={showLength}
+      />
     </>
   );
 };

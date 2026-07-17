@@ -20,12 +20,13 @@ interface GymPerformance {
 interface TimetableProps {
   classSchedules: ClassSchedule[];
   gymPerformances: GymPerformance[];
+  showLength: number; // クラス公演の所要時間（分）
 }
 
 // ─── 2. タイムスロット計算の定数 ───
 const START_HOUR = 9; // 開始時間: 9:00
 const END_HOUR = 16; // 終了時間: 16:00
-const SLOT_MINUTES = 15; // 1マスの刻み: 15分
+const SLOT_MINUTES = 10; // 1マスの刻み: 15分
 const HEADER_OFFSET = 1; // CSS Grid でヘッダーが使う1行分をずらす
 
 // 時間からGridの行番号を計算するヘルパー関数
@@ -36,7 +37,7 @@ const getGridRowIndex = (dateTimeStr: string): number => {
 
   // 開始時間（9:00）からの経過分数を求める
   const elapsedMinutes = (hours - START_HOUR) * 60 + minutes;
-  // 15分ごとのスロット数に変換
+  // 10分ごとのスロット数に変換
   const slotIndex = Math.floor(elapsedMinutes / SLOT_MINUTES);
 
   // 1（Gridは1始まり） + ヘッダー分 + スロット数
@@ -69,6 +70,7 @@ export function formatToShortDate(dateStr: string): string {
 export default function TimeTableContent({
   classSchedules,
   gymPerformances,
+  showLength,
 }: TimetableProps) {
   // 学園祭の日付（仮に9/21を1日目、9/22を2日目とする）
   const uniqueDates = Array.from(
@@ -119,7 +121,7 @@ export default function TimeTableContent({
         <div
           key={`time-${currentHour}`}
           className={styles.timeScale}
-          style={{ gridRow, gridColumn: 1, height: '40px' }} // 高さをある程度確保
+          style={{ gridRow, gridColumn: 1, height: '30px' }} // 高さをある程度確保
         >
           {displayTime}
         </div>,
@@ -134,7 +136,7 @@ export default function TimeTableContent({
         />,
       );
     } else {
-      // 15分ごとの薄い点線
+      // 10分ごとの薄い点線
       gridLines.push(
         <div
           key={`line-${i}`}
@@ -157,7 +159,7 @@ export default function TimeTableContent({
           className={styles.timetable}
           style={{
             // 総スロット（28マス）+ ヘッダー分の高さを自動確保
-            gridTemplateRows: `50px repeat(${totalSlots}, 40px)`,
+            gridTemplateRows: `50px repeat(${totalSlots}, 30px)`,
           }}
         >
           {/* 列タイトルヘッダー */}
@@ -189,16 +191,23 @@ export default function TimeTableContent({
           {/* 🏫 クラス公演カードの配置 */}
           {day1ClassSchedules.map((item) => {
             const startRow = getGridRowIndex(item.start_at);
-            // クラス公演は一律45分間（15分×3スロット分）と仮定
-            const endRow = startRow + 3;
+            const slotsNeeded = Math.ceil(showLength / SLOT_MINUTES); // 例: 60分 / 10分 = 6スロット
+            const endRow = startRow + slotsNeeded;
 
-            const formattedTime = new Date(item.start_at).toLocaleTimeString(
-              'ja-JP',
-              {
-                hour: '2-digit',
-                minute: '2-digit',
-              },
+            const startDate = new Date(item.start_at);
+            const formattedStartTime = startDate.toLocaleTimeString('ja-JP', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+
+            // ─── 💡 修正箇所：開始時間に公演時間を足して終了時間を計算 ───
+            const endDate = new Date(
+              startDate.getTime() + showLength * 60 * 1000,
             );
+            const formattedEndTime = endDate.toLocaleTimeString('ja-JP', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
 
             return (
               <div
@@ -213,7 +222,7 @@ export default function TimeTableContent({
                   <div className={styles.eventTitle}>{item.round_name}</div>
                   <div className={styles.eventSubtitle}>各教室公演</div>
                 </div>
-                <div className={styles.eventTime}>{formattedTime} 〜</div>
+                <div className={styles.eventTime}>{formattedStartTime} 〜 {formattedEndTime}</div>
               </div>
             );
           })}
@@ -269,7 +278,7 @@ export default function TimeTableContent({
           className={styles.timetable}
           style={{
             // 総スロット（28マス）+ ヘッダー分の高さを自動確保
-            gridTemplateRows: `50px repeat(${totalSlots}, 40px)`,
+            gridTemplateRows: `50px repeat(${totalSlots}, 30px)`,
           }}
         >
           {/* 列タイトルヘッダー */}
@@ -301,16 +310,23 @@ export default function TimeTableContent({
           {/* 🏫 クラス公演カードの配置 */}
           {day2ClassSchedules.map((item) => {
             const startRow = getGridRowIndex(item.start_at);
-            // クラス公演は一律45分間（15分×3スロット分）と仮定
-            const endRow = startRow + 3;
+            const slotsNeeded = Math.ceil(showLength / SLOT_MINUTES); // 例: 45分 / 15分 = 3スロット
+            const endRow = startRow + slotsNeeded;
 
-            const formattedTime = new Date(item.start_at).toLocaleTimeString(
-              'ja-JP',
-              {
-                hour: '2-digit',
-                minute: '2-digit',
-              },
+            const startDate = new Date(item.start_at);
+            const formattedStartTime = startDate.toLocaleTimeString('ja-JP', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+
+            // ─── 💡 修正箇所：開始時間に公演時間を足して終了時間を計算 ───
+            const endDate = new Date(
+              startDate.getTime() + showLength * 60 * 1000,
             );
+            const formattedEndTime = endDate.toLocaleTimeString('ja-JP', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
 
             return (
               <div
@@ -325,7 +341,7 @@ export default function TimeTableContent({
                   <div className={styles.eventTitle}>{item.round_name}</div>
                   <div className={styles.eventSubtitle}>各教室公演</div>
                 </div>
-                <div className={styles.eventTime}>{formattedTime} 〜</div>
+                <div className={styles.eventTime}>{formattedStartTime} 〜 {formattedEndTime}</div>
               </div>
             );
           })}
