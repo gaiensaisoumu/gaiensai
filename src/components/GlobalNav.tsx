@@ -40,7 +40,9 @@ const GlobalNav = () => {
           <a href='/map'>校内マップ</a>
         </li>
         <li>
-          <a href='#'>アクセス</a>
+          <a href='https://www.metro.ed.jp/aoyama-h/access/access.html'>
+            アクセス
+          </a>
         </li>
         <li>
           <a href='/faq'>FAQ</a>
