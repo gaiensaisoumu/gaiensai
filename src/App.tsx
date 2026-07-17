@@ -15,6 +15,7 @@ import {
   preload,
   ScanHistory,
   TimeTable,
+  Map,
   Settings,
   StudentAccounts,
 } from './routes';
@@ -55,6 +56,7 @@ const userPageLayout = () => (
         <Route path='/performances' component={Performances} />
         <Route path='/faq' component={FAQ} />
         <Route path='/timetable' component={TimeTable} />
+        <Route path='/map' component={Map} />
         <Route path='/auth/line/callback' component={LineCallback} />
         <Route default component={NotFound} />
       </Router>
@@ -109,8 +111,9 @@ const InnerApp = () => {
       preload(FAQ);
     } else if (path.startsWith('/timetable')) {
       preload(TimeTable);
-    }
-    else if (path.startsWith('/admin/scan')) {
+    } else if (path.startsWith('/map')) {
+      preload(Map);
+    } else if (path.startsWith('/admin/scan')) {
       preload(AdminLayout, ScanLayout, Scan, AdminHome);
     } else if (path.startsWith('/admin')) {
       preload(AdminLayout, AdminHome);

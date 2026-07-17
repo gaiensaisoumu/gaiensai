@@ -37,7 +37,7 @@ const GlobalNav = () => {
           <a href='#'>ご来場の注意</a>
         </li>
         <li>
-          <a href='#'>校内マップ</a>
+          <a href='/map'>校内マップ</a>
         </li>
         <li>
           <a href='#'>アクセス</a>

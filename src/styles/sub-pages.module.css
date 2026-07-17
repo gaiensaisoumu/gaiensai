@@ -27,3 +27,35 @@
     margin: 1.5rem;
   }
 }
+
+.map {
+  display: block;
+  width: 90%;
+  margin: 0 auto;
+}
+
+/* ボタンの配置調整用 */
+.buttonContainer {
+  margin: 20px 0;
+  text-align: center;
+  /* 中央寄せにしたい場合 */
+}
+
+/* ボタン風の見た目にするスタイル */
+.openButton {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: var(--brighter-primary-color);
+  color: var(--main-text-color);
+  text-decoration: none;
+  /* 下線を消す */
+  border-radius: 10px;
+  /* 角丸 */
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+/* マウスを乗せた時の動き */
+.openButton:hover {
+  background-color: var(--primary-color);
+}

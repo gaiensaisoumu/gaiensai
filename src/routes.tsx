@@ -14,6 +14,7 @@ export const Home = lazy(() => import('./pages/user/Home'));
 export const Performances = lazy(() => import('./pages/user/Performances'));
 export const FAQ = lazy(() => import('./pages/user/FAQ'));
 export const TimeTable = lazy(() => import('./pages/user/TimeTable'));
+export const Map = lazy(() => import('./pages/user/Map'));
 export const DayTicketIssue = lazy(() => import('./pages/user/dayTickets/DayTicketIssue'));
 export const DayTicketIssueResult = lazy(() => import('./pages/user/dayTickets/DayTicketIssueResult'));
 export const Students = lazy(() => import('./pages/user/students/Students'));

@@ -334,7 +334,7 @@ const Home = () => {
             <IoIosWarning />
             ご来場の注意
           </a>
-          <a href='#' className={styles.buttonLink}>
+          <a href='/map' className={styles.buttonLink}>
             <FaMapLocationDot />
             校内マップ
           </a>
