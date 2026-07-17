@@ -65,3 +65,28 @@
   margin: 0 !important;
   font-size: 0.9rem;
 }
+
+.smallButtonLink {
+  display: inline-block;
+  text-decoration: none;
+  margin: 0.5rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  background: var(--primary-color);
+  color: var(--main-text-color);
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .smallButtonLink:hover {
+    border-color: var(--button-hover-color);
+  }
+}
+
+.smallButtonLink:focus,
+.smallButtonLink:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}

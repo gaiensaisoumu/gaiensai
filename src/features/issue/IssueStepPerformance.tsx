@@ -3,6 +3,7 @@ import PerformancesTable from '../../features/performances/PerformancesTable';
 import GymPerformancesTable from '../../features/performances/GymPerformancesTable';
 import type { SelectedPerformance } from '../../types/Issue.types';
 import styles from '../../pages/user/students/Issue.module.css';
+import dashboardStyles from '../../pages/user/students/Dashboard.module.css';
 
 type IssueStepPerformanceProps = {
   isGymPerformanceTicket: boolean;
@@ -35,6 +36,12 @@ const IssueStepPerformance = ({
     <NormalSection>
       <h2 className={styles.sectionTitle}>2. 公演の選択</h2>
       <p>下の表から、発券したい公演を選択してください。</p>
+      <a href='/performances' className={dashboardStyles.smallButtonLink}>
+        公演の詳細はこちら
+      </a>
+      <a href='/timetable' className={dashboardStyles.smallButtonLink}>
+        タイムテーブルはこちら
+      </a>
       {isGymPerformanceTicket ? (
         showGymPerformances ? (
           <GymPerformancesTable

@@ -563,6 +563,12 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
       </NormalSection>
       <NormalSection>
         <h2>公演空き状況</h2>
+        <a href='/performances' className={dashboardStyles.smallButtonLink}>
+          公演の詳細はこちら
+        </a>
+        <a href='/timetable' className={dashboardStyles.smallButtonLink}>
+          タイムテーブルはこちら
+        </a>
         {ticketLoading ? <LoadingSpinner /> : null}
         {(() => {
           const showClassPerformances =

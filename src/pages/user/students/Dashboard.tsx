@@ -869,6 +869,12 @@ const Dashboard = ({ userData }: DashboardProps) => {
       </NormalSection>
       <NormalSection>
         <h2>公演空き状況</h2>
+        <a href='/performances' className={styles.smallButtonLink}>
+          公演の詳細はこちら
+        </a>
+        <a href='/timetable' className={styles.smallButtonLink}>
+          タイムテーブルはこちら
+        </a>
         <h3>クラス公演</h3>
         <PerformancesTable
           enableIssueJump={true}
