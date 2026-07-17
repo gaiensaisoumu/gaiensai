@@ -6,6 +6,7 @@
 
   --main-bg-color: #1a1a1a;
   --error-bg-color: #8b1414;
+  --timetable-gym-bg-color: #a50f1b;
   --warn-bg-color: rgba(215, 184, 83, 0.3);
   --info-bg-color: rgba(0, 56, 120, 0.7);
   --translucent-b-bg-color: rgba(0, 0, 0, 0.2);
@@ -36,6 +37,7 @@
   --info-border-color: #003878;
   --select-border-color: rgba(255, 255, 255, 0.24);
   --table-border-color: rgba(255, 255, 255, 0.1);
+  --timetable-gym-border-color: #be322e;
 
   /* helpers */
   --white: #ffffff;

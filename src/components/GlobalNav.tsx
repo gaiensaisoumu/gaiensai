@@ -31,7 +31,7 @@ const GlobalNav = () => {
           </a>
         </li>
         <li>
-          <a href='#'>スケジュール</a>
+          <a href='/timetable'>タイムテーブル</a>
         </li>
         <li>
           <a href='#'>ご来場の注意</a>

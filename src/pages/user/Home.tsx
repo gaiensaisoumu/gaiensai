@@ -263,9 +263,9 @@ const Home = () => {
             <PiMicrophoneStageFill />
             公演一覧
           </a>
-          <a href='#' className={styles.buttonLink}>
+          <a href='/timetable' className={styles.buttonLink}>
             <GrSchedulePlay />
-            スケジュール
+            タイムテーブル
           </a>
         </div>
       </section>

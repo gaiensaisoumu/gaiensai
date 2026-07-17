@@ -1,0 +1,132 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem;
+  padding-top: 0;
+  font-family: sans-serif;
+}
+
+/* ─── 🗓 タイムテーブルの土台 ─── */
+.timetableWrapper {
+  border: 1px solid var(--translucent-w-bg-color);
+  border-radius: 0.75rem;
+  background-color: var(--normal-section-bg-color);
+  overflow-x: auto;
+  /* スマホでは横スクロールできるように */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.timetable {
+  display: grid;
+  /*
+   * 列の構成：
+   * 1列目: 時間目盛り (80px固定)
+   * 2列目: クラス公演 (1fr)
+   * 3列目: 体育館公演 (1fr)
+   */
+  grid-template-columns: 80px 1fr 1fr;
+  position: relative;
+  min-width: 600px;
+  /* 極端につぶれるのを防ぐ */
+}
+
+/* ─── 👤 ヘッダー（列ラベル） ─── */
+.headerCell {
+  background-color: var(--normal-section-bg-color);
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--heading-text-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.headerCell:not(:last-child) {
+  border-right: 1px solid var(--translucent-w-bg-color);
+}
+
+/* ─── ⏰ 左側の時間軸目盛り ─── */
+.timeScale {
+  grid-column: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sub-text-color);
+  border-right: 1px solid var(--translucent-w-bg-color);
+  position: relative;
+  /* 各時間線の位置合わせ微調整 */
+  padding-top: 2px;
+}
+
+/* 背景に敷く時間ごとの区切り線 */
+.gridLine {
+  grid-column: 1 / span 3;
+  border-bottom: 1px dashed var(--translucent-w-bg-color);
+  pointer-events: none;
+}
+
+/* 30分や1時間ごとの太い境界線 */
+.gridLineHour {
+  grid-column: 1 / span 3;
+  border-bottom: 1px solid var(--translucent-w-bg-color);
+  pointer-events: none;
+}
+
+/* ─── 🎭 公演カード（グリッド内に絶対配置される） ─── */
+.eventCard {
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-size: 0.825rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 4px var(--translucent-b-bg-color);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  margin: 2px;
+  /* カード同士がくっつかないように */
+  border-left: 4px solid transparent;
+}
+
+.eventCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* クラス公演のカードデザイン */
+.classEvent {
+  background-color: var(--primary-color);
+  border: 1px solid var(--brighter-primary-color);
+}
+
+/* 体育館公演のカードデザイン */
+.gymEvent {
+  background-color: var(--timetable-gym-bg-color);
+  border: 1px solid var(--timetable-gym-border-color);
+  /* 緑のアクセント */
+}
+
+.eventTitle {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+  font-size: 1.25em;
+}
+
+.eventSubtitle {
+  font-size: 0.75rem;
+  color: inherit;
+  opacity: 0.85;
+  font-size: 1.1em;
+}
+
+.eventTime {
+  font-size: 0.7rem;
+  margin-top: auto;
+  font-weight: 600;
+  opacity: 0.8;
+  font-size: 1.1em;
+}

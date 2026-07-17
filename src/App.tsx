@@ -14,6 +14,7 @@ import {
   JuniorAccounts,
   preload,
   ScanHistory,
+  TimeTable,
   Settings,
   StudentAccounts,
 } from './routes';
@@ -53,6 +54,7 @@ const userPageLayout = () => (
         <Route path='/day-tickets' component={DayTicketIssue} />
         <Route path='/performances' component={Performances} />
         <Route path='/faq' component={FAQ} />
+        <Route path='/timetable' component={TimeTable} />
         <Route path='/auth/line/callback' component={LineCallback} />
         <Route default component={NotFound} />
       </Router>
@@ -105,6 +107,8 @@ const InnerApp = () => {
       preload(Performances);
     } else if (path.startsWith('/faq')) {
       preload(FAQ);
+    } else if (path.startsWith('/timetable')) {
+      preload(TimeTable);
     }
     else if (path.startsWith('/admin/scan')) {
       preload(AdminLayout, ScanLayout, Scan, AdminHome);
