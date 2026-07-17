@@ -85,28 +85,30 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@eslint-react/eslint-plugin@^5.17.1",
         "npm:@eslint/js@^9.39.2",
         "npm:@preact/preset-vite@^2.10.5",
-        "npm:@supabase/supabase-js@^2.105.4",
-        "npm:@types/node@^26.1.0",
+        "npm:@supabase/supabase-js@^2.110.2",
+        "npm:@types/node@^26.1.1",
         "npm:@vitest/coverage-v8@^4.1.9",
-        "npm:eslint-plugin-react@^7.37.5",
-        "npm:eslint@^9.39.2",
+        "npm:esbuild@~0.28.1",
+        "npm:eslint-plugin-react-hooks@^7.1.1",
+        "npm:eslint@^10.7.0",
         "npm:globals@^17.7.0",
         "npm:jsdom@^29.1.1",
         "npm:preact-iso@^2.12.0",
         "npm:preact@^10.29.2",
-        "npm:prettier@^3.9.1",
+        "npm:prettier@^3.9.5",
         "npm:qr-scanner@^1.4.2",
         "npm:react-icons@^5.7.0",
         "npm:recharts@^3.9.2",
         "npm:supabase@^2.109.1",
-        "npm:typescript-eslint@^8.61.1",
+        "npm:typescript-eslint@^8.64.0",
         "npm:typescript@~6.0.3",
         "npm:uqr@~0.1.2",
         "npm:vite-plugin-pwa@^1.3.0",
         "npm:vite@^8.1.3",
-        "npm:vitest@^4.1.9"
+        "npm:vitest@^4.1.10"
       ]
     }
   }

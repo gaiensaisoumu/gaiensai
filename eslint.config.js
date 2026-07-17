@@ -1,19 +1,36 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import eslintReact from "@eslint-react/eslint-plugin";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
+  // 1. グローバルな無視設定
   {
     ignores: ["dist/**", "node_modules/**"]
   },
-  tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
+
+  // 2. 基本となる推奨設定の適用
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  // 3. React / TypeScript プロジェクト共通のベース設定
   {
-    // プロジェクト固有のルール
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    plugins: {
+      "react-hooks": reactHooks,
+      "@eslint-react": eslintReact,
+    },
+    languageOptions: {
+      globals: globals.browser
+    },
     rules: {
+      // プラグインの推奨ルールをここで展開して有効化
+      ...reactHooks.configs.recommended.rules,
+      ...eslintReact.configs.recommended.rules,
+
+      // --- プロジェクト固有のカスタムルール ---
       // セミコロン強制
       "semi": ["warn", "always"],
 
@@ -31,13 +48,9 @@ export default defineConfig([
       "eqeqeq": ["error", "always"],
       "curly": ["warn", "all"],
 
-      // Preactを使用するのでこれはオフに。
-      "react/react-in-jsx-scope": "off",
+      // Preact環境：React 17以降やPreactではJSXScopeは不要ですが、
+      // @eslint-react ではデフォルトでオフ、または別のルール名（@eslint-react/react/no-missing-react-importなど仕様による）になります。
+      // 旧プラグインの "react/react-in-jsx-scope" は不要なので削除して問題ありません。
     },
-    settings: {
-      react: {
-        version: "detect"
-      }
-    }
   },
 ]);
