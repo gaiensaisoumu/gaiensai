@@ -217,6 +217,16 @@ const Home = () => {
         </p>
       </NormalSection>
       <NormalSection className={styles.scrollSection} data-scroll-section=''>
+        <h2>中学生用ページ</h2>
+        <p>
+          すでに当選メールから登録をした方は、
+          <a href='/students' onMouseEnter={() => preload(Students)}>
+            こちら
+          </a>
+          からログインが可能です。
+        </p>
+      </NormalSection>
+      <NormalSection className={styles.scrollSection} data-scroll-section=''>
         <h2>チケット</h2>
         <p>
           招待券は、お使いのデバイスで表示したことのあるもののみ表示できます。まだ閲覧していない場合は、招待URLよりアクセスしてください。
@@ -251,7 +261,7 @@ const Home = () => {
           />
         </div>
         <div className={styles.buttonLinkSection}>
-          <a href='#' className={styles.buttonLink}>
+          <a href='/pamphlet' className={styles.buttonLink}>
             <BiSolidFoodMenu />
             デジタルパンフレット
           </a>
@@ -330,7 +340,7 @@ const Home = () => {
         </div>
         <h2 className={sharedStyles.normalH2}>ご来場の皆様へ</h2>
         <div className={styles.buttonLinkSection}>
-          <a href='#' className={styles.buttonLink}>
+          <a href='/info' className={styles.buttonLink}>
             <IoIosWarning />
             ご来場の注意
           </a>
