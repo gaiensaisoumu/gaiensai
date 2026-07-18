@@ -154,6 +154,7 @@ export default function TimeTableContent({
       </h2>
 
       {/* 🗓 タイムテーブル本体 */}
+      <p className={styles.scrollHint}>← 横にスクロールできます →</p>
       <div className={styles.timetableWrapper}>
         <div
           className={styles.timetable}
@@ -222,7 +223,9 @@ export default function TimeTableContent({
                   <div className={styles.eventTitle}>{item.round_name}</div>
                   <div className={styles.eventSubtitle}>各教室公演</div>
                 </div>
-                <div className={styles.eventTime}>{formattedStartTime} 〜 {formattedEndTime}</div>
+                <div className={styles.eventTime}>
+                  {formattedStartTime} 〜 {formattedEndTime}
+                </div>
               </div>
             );
           })}
@@ -273,6 +276,7 @@ export default function TimeTableContent({
       </h2>
 
       {/* 🗓 タイムテーブル本体 */}
+      <p className={styles.scrollHint}>← 横にスクロールできます →</p>
       <div className={styles.timetableWrapper}>
         <div
           className={styles.timetable}
@@ -341,7 +345,9 @@ export default function TimeTableContent({
                   <div className={styles.eventTitle}>{item.round_name}</div>
                   <div className={styles.eventSubtitle}>各教室公演</div>
                 </div>
-                <div className={styles.eventTime}>{formattedStartTime} 〜 {formattedEndTime}</div>
+                <div className={styles.eventTime}>
+                  {formattedStartTime} 〜 {formattedEndTime}
+                </div>
               </div>
             );
           })}
