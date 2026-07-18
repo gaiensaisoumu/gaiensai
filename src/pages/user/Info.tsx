@@ -22,6 +22,13 @@ const Info = () => {
         </ul>
       </NormalSection>
       <NormalSection>
+        <h2>写真撮影について</h2>
+        <ul>
+          <li>本校の<strong>生徒、保護者プレートをつけている保護者の方、学校関係者</strong>以外の写真撮影は<strong>固くお断りして</strong>おります。</li>
+          <li>また、本校の生徒、保護者の方、学校関係者であっても、写真や動画をSNSなどにアップしないようにお願いします。</li>
+        </ul>
+      </NormalSection>
+      <NormalSection>
         <h2>校内での行動</h2>
         <ul>
           <li>
@@ -31,10 +38,13 @@ const Info = () => {
             外苑祭のプログラムについて、やむを得ない事情で予告なく変更/中止する可能性がございます。予めご了承ください。
           </li>
           <li>
-            校内は禁煙となっております。ご理解とご協力の程よろしくお願いします。
+            敷地内は<strong>完全禁煙</strong>となっております。ご理解とご協力の程よろしくお願いします。
           </li>
           <li>
             校内にゴミ箱はありません。校内で発生したゴミのお持ち帰りにご協力ください。
+          </li>
+          <li>
+            大変暑くなることが予想されますので、体調に十分注意し、こまめな<strong>水分補給</strong>をお願いします。その他ハンディファンの使用など各自工夫して対策をお願いします。
           </li>
           <li>
             校内は大変狭く、外苑祭には多くの方々にご来場いただいているため毎年大変混雑しております。そのため、他のご来場者の方々の邪魔にならないように配慮してください。
@@ -42,6 +52,25 @@ const Info = () => {
           <li>
             公平を期すために公演中には北側(４組と５組の教室の間の)階段は封鎖されます。ご理解ください。
           </li>
+          <li>落とし物は3階総務室にて管理しております。</li>
+          <li>
+            ご不明点がありましたら、前日までは
+            <a
+              href='https://docs.google.com/forms/d/e/1FAIpQLSeMds1IgEh7OBHcO5bYnSrUAWEp2fWdJ_yEBMyhywQrK2JgTw/viewform?usp=header'
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              お問い合わせ
+            </a>
+            よりお願いします。当日はSTAFFのネームホルダーをかけた外苑祭総務までお声かけくか、3階総務室までお越しください。。
+          </li>
+        </ul>
+      </NormalSection>
+      <NormalSection>
+        <h2>自動販売機について</h2>
+        <ul>
+          <li>自動販売機は1階にございますが、早い時間での<strong>売り切れ</strong>が予想されます。別途お飲み物をご用意ください。</li>
+          <li>電子マネー、QRコード決済に対応しております。</li>
         </ul>
       </NormalSection>
       <NormalSection>
