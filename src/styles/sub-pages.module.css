@@ -59,3 +59,17 @@
 .openButton:hover {
   background-color: var(--primary-color);
 }
+
+.searchInputWrapper {
+  display: block;
+  text-align: center;
+  margin: 1em;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--login-input-border);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
