@@ -13,7 +13,12 @@ import {
   touchTicketDisplayCacheOpenedAt,
   writeTicketDisplayCache,
 } from '../../features/tickets/ticketDisplayCache.ts';
-import { type TicketDecodedDisplaySeed } from '../../features/tickets/ticketCodeDecode.ts';
+import {
+  decodeTicketCodeWithEnv,
+  toTicketDecodedDisplaySeed,
+  verifyTicketSignature,
+  type TicketDecodedDisplaySeed,
+} from '../../features/tickets/ticketCodeDecode.ts';
 import { formatTicketTypeLabel } from '../../features/tickets/formatTicketTypeLabel.ts';
 import { resolveJuniorRelationshipName } from '../../features/tickets/juniorRelationship.ts';
 
@@ -334,8 +339,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       // ステップ1: 復号化のみを実行（署名検証はバックグラウンド）
       let decoded: TicketDecodedDisplaySeed | null = null;
       try {
-        const { decodeTicketCodeWithEnv, toTicketDecodedDisplaySeed } =
-          await import('../../features/tickets/ticketCodeDecode.ts');
         const decodedRaw = await decodeTicketCodeWithEnv(code);
         decoded = toTicketDecodedDisplaySeed(decodedRaw);
         if (!decoded) {
@@ -374,8 +377,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
 
         // バックグラウンドで署名検証とステータス確認を実行
         void (async () => {
-          const { verifyTicketSignature } =
-            await import('../../features/tickets/ticketCodeDecode.ts');
           const [signatureIsValid, validityResult] = await Promise.all([
             verifyTicketSignature(code, signature),
             checkTicketValidity(code),
@@ -524,8 +525,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       // バックグラウンドで署名検証、有効性確認を実行
       void (async () => {
         // 署名検証と有効性確認を並列実行
-        const { verifyTicketSignature } =
-          await import('../../features/tickets/ticketCodeDecode.ts');
         const [signatureIsValid, validityResult] = await Promise.all([
           verifyTicketSignature(code, signature),
           checkTicketValidity(code),
@@ -826,8 +825,6 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
 
   const syncTicketCancelledStateToCache = async () => {
     try {
-      const { writeTicketDisplayCache, readTicketDisplayCache } =
-        await import('../../features/tickets/ticketDisplayCache.ts');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const existing = readTicketDisplayCache<Record<string, any>>(code);
       if (existing) {
