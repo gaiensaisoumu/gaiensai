@@ -28,7 +28,7 @@ import {
   type TicketRow,
   updateRecordCountOnServer,
   updateReentryCountOnServer,
-  useTicketOnServer,
+  getTicketOnServer,
 } from '../../features/admin/scanSync';
 import {
   clearPendingOperationsForLog,
@@ -405,7 +405,7 @@ const ScanHistory = () => {
               operation.result === 'success' ||
               operation.result === 'reentry'
             ) {
-              await useTicketOnServer(
+              await getTicketOnServer(
                 localServerUrl,
                 operation.ticketId,
                 operation.count,

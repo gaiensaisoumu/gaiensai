@@ -150,7 +150,7 @@ const Issue = () => {
   const [isInitializing, setIsInitializing] = useState(true); // 初期化フラグを追加
   const animationTimerRef = useRef<number | null>(null);
   const prevSelectedPerformanceRef = useRef<SelectedPerformance>(null);
-  const selectionFromQueryHasRun = useRef(false);
+  const [selectionFromQueryHasRun, setSelectionFromQueryHasRun] = useState(false);
 
   const { route } = useLocation();
   const { config } = useEventConfig();
@@ -389,13 +389,13 @@ const Issue = () => {
       issueControls === null ||
       remainingIssueCapacity === null ||
       ownClubs === null ||
-      selectionFromQueryHasRun.current
+      selectionFromQueryHasRun
     ) {
       return;
     }
 
     const loadSelectionFromQuery = async () => {
-      selectionFromQueryHasRun.current = true;
+      setSelectionFromQueryHasRun(true);
       setIsInitializing(true); // 読み込み開始
       const params = new URLSearchParams(window.location.search);
       const venue = params.get('venue');
@@ -565,7 +565,7 @@ const Issue = () => {
     };
 
     void loadSelectionFromQuery();
-  }, [issueControls, remainingIssueCapacity, ownClubs]);
+  }, [issueControls, remainingIssueCapacity, ownClubs, selectionFromQueryHasRun]);
 
   // selectedPerformance の変更を追跡（アラート表示判定用）
   useEffect(() => {

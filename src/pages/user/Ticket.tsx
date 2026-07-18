@@ -310,14 +310,14 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
 
   const { route } = useLocation();
 
-  if (!token) {
-    route('/');
-    return null;
-  }
-
-  const [code, signature] = token.split('.');
+  const [code, signature] = token ? token.split('.') : ['', ''];
 
   useEffect(() => {
+    if (!token) {
+      route('/');
+      return;
+    }
+
     const loadTicket = async () => {
       if (!code || !signature) {
         setErrorMessages(['チケットURLの形式が正しくありません。']);

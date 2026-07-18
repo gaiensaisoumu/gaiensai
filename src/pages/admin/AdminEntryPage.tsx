@@ -36,7 +36,7 @@ import {
   fetchScanRecordsFromServer,
   logTicketToServer as postTicketLogToServer,
   syncSupabaseTicketsToServer,
-  useTicketOnServer,
+  getTicketOnServer,
   updateRecordCountOnServer,
   updateReentryCountOnServer,
   type SupabaseTicketStatusRow,
@@ -546,7 +546,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
             operation.result === 'success' ||
             operation.result === 'reentry'
           ) {
-            await useTicketOnServer(
+            await getTicketOnServer(
               localServerUrl,
               operation.ticketId,
               operation.count,
@@ -845,7 +845,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
 
       const defaultEntryCount = getDefaultEntryCount(decoded);
       const { ticketStatus, ticketUsedAt, lastUsedAt, masterStatus } =
-        await useTicket(code, { count: defaultEntryCount });
+        await fetchTicketStatus(code, { count: defaultEntryCount });
 
       await processTicketStatus(
         decoded,
@@ -1056,7 +1056,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
 
       const defaultEntryCount = getDefaultEntryCount(decoded);
       const { ticketStatus, ticketUsedAt, lastUsedAt, masterStatus } =
-        await useTicket(pendingSignatureCode, { count: defaultEntryCount });
+        await fetchTicketStatus(pendingSignatureCode, { count: defaultEntryCount });
 
       await processTicketStatus(
         decoded,
@@ -1185,7 +1185,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
     setTimeout(() => focus(), 10);
   };
 
-  async function useTicket(
+  async function fetchTicketStatus(
     ticketId: string,
     options?: { allowUnknown?: boolean; count?: number },
   ) {
@@ -1212,7 +1212,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
       };
     }
     try {
-      const result = await useTicketOnServer(
+      const result = await getTicketOnServer(
         localServerUrl,
         ticketId,
         options?.count ?? 1,
@@ -1469,7 +1469,7 @@ const AdminEntryPage = ({ mode }: { mode: EntryMode }) => {
       return;
     }
 
-    const retried = await useTicket(pending.code, {
+    const retried = await fetchTicketStatus(pending.code, {
       allowUnknown: true,
       count: getDefaultEntryCount(pending.decoded),
     });

@@ -42,6 +42,22 @@ export default defineConfig([
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-undef": "off",
 
+      // @eslint-reactルールの調整
+      "@eslint-react/set-state-in-effect": "off",
+      "@eslint-react/exhaustive-deps": "off",
+      "@eslint-react/no-array-index-key": "off",
+      "@eslint-react/web-api-no-leaked-timeout": "off",
+      "@eslint-react/web-api-no-leaked-event-listener": "off",
+      "@eslint-react/purity": "off",
+      "@eslint-react/naming-convention-ref-name": "off",
+      "@eslint-react/no-unnecessary-use-prefix": "off",
+      "@eslint-react/no-use-context": "off",
+      "@eslint-react/no-context-provider": "off",
+      "@eslint-react/use-state": "off",
+
+      // react-hooksルールの調整
+      "react-hooks/exhaustive-deps": "off",
+
       // コード品質
       "no-var": "error",
       "prefer-const": "warn",

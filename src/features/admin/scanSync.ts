@@ -109,7 +109,7 @@ async function requestScanServer(
   }
 }
 
-export async function useTicketOnServer(
+export async function getTicketOnServer(
   localServerUrl: string,
   ticketId: string,
   count = 1,

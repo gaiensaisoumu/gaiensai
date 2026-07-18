@@ -2,7 +2,7 @@ import styles from '../../styles/sub-pages.module.css';
 import { preload, Scan } from '../../routes';
 import { useTitle } from '../../hooks/useTitle';
 
-const adminHome = () => {
+const AdminHome = () => {
   useTitle('管理画面');
   return (
     <div>
@@ -45,4 +45,4 @@ const adminHome = () => {
   );
 };
 
-export default adminHome;
+export default AdminHome;

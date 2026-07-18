@@ -88,7 +88,7 @@
         "npm:@eslint-react/eslint-plugin@^5.17.1",
         "npm:@eslint/js@^9.39.2",
         "npm:@preact/preset-vite@^2.10.5",
-        "npm:@supabase/supabase-js@^2.110.2",
+        "npm:@supabase/supabase-js@^2.110.7",
         "npm:@types/node@^26.1.1",
         "npm:@vitest/coverage-v8@^4.1.9",
         "npm:esbuild@~0.28.1",
