@@ -4,6 +4,7 @@ import { supabase, getPerformanceImageUrl } from '../../lib/supabase';
 import baseStyles from '../../styles/sub-pages.module.css';
 import styles from './Performances.module.css';
 import NormalSection from '../../components/ui/NormalSection';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 interface ClassPerformance {
   id: number; // smallint
@@ -109,7 +110,7 @@ const Performances = () => {
   }, []);
 
   if (loading) {
-    return <div className={styles.stateMessage}>データを読み込み中...</div>;
+    return <div className={styles.stateMessage}><LoadingSpinner /></div>;
   }
   if (error) {
     return (

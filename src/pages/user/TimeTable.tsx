@@ -3,6 +3,7 @@ import { useTitle } from '../../hooks/useTitle';
 import { supabase } from '../../lib/supabase';
 import styles from '../../styles/sub-pages.module.css';
 import TimeTableContent from '../../components/ui/TimeTableContent';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 // スケジュールデータの型（提示されたテーブル構造に準拠）
 interface ClassSchedule {
@@ -77,7 +78,9 @@ const TimeTable = () => {
       <div
         style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}
       >
-        <p>タイムテーブルを読み込み中...</p>
+        <p>
+          <LoadingSpinner />
+        </p>
       </div>
     );
   }
