@@ -39,8 +39,9 @@ const isStudentAccountByEmail = (email?: string | null): boolean => {
 const Junior = () => {
   const { path, route } = useLocation();
   const [session, setSession] = useState<AuthState>(undefined);
-  const [userData, setUserData] = useState<UserData | undefined>(undefined);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useTitle('中学生用ページ');
 
@@ -98,9 +99,11 @@ const Junior = () => {
     const loadProfile = async (nextSession: Session) => {
       setSession(nextSession);
       setProfileError(null);
+      setIsLoading(true);
 
       if (!nextSession) {
         setUserData(null);
+        setIsLoading(false);
         route(preserveQuery('/junior/login'));
         return;
       }
@@ -111,10 +114,12 @@ const Junior = () => {
         const cachedProfile = readCachedJuniorProfile(nextSession.user.id);
         if (cachedProfile) {
           setUserData(cachedProfile);
+          setIsLoading(false);
           return;
         }
 
         setProfileError(formatErrorMessage(error));
+        setIsLoading(false);
         return;
       }
 
@@ -122,6 +127,7 @@ const Junior = () => {
       if (data) {
         writeCachedJuniorProfile(nextSession.user.id, data);
       }
+      setIsLoading(false);
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -176,16 +182,19 @@ const Junior = () => {
     }
 
     setProfileError(null);
+    setIsLoading(true);
     const { data, error } = await loadUserProfile(session.user.id);
 
     if (error) {
       const cachedProfile = readCachedJuniorProfile(session.user.id);
       if (cachedProfile) {
         setUserData(cachedProfile);
+        setIsLoading(false);
         return;
       }
 
       setProfileError(formatErrorMessage(error));
+      setIsLoading(false);
       return;
     }
 
@@ -193,12 +202,10 @@ const Junior = () => {
     if (data) {
       writeCachedJuniorProfile(session.user.id, data);
     }
+    setIsLoading(false);
   };
 
-  if (
-    session === undefined ||
-    (session && userData === undefined && !profileError)
-  ) {
+  if (isLoading) {
     return (
       <section>
         <h1 className={styles.pageTitle}>中学生用ページ</h1>
@@ -222,7 +229,7 @@ const Junior = () => {
     );
   }
 
-  if (profileError && userData === undefined) {
+  if (profileError && userData === null) {
     return (
       <section>
         <h1 className={styles.pageTitle}>中学生用ページ</h1>
@@ -237,7 +244,7 @@ const Junior = () => {
     );
   }
 
-  if (!userData) {
+  if (userData === null) {
     return (
       <JuniorLayout>
         <InitialRegistration onRegistered={handleRegistered} />

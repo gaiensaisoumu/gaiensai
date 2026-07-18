@@ -40,8 +40,9 @@ const isStudentAccountByEmail = (email?: string | null): boolean => {
 const Students = () => {
   const { path, route } = useLocation();
   const [session, setSession] = useState<AuthState>(undefined);
-  const [userData, setUserData] = useState<UserData | undefined>(undefined);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useTitle('生徒用ページ');
 
@@ -66,9 +67,11 @@ const Students = () => {
     const loadProfile = async (nextSession: Session) => {
       setSession(nextSession);
       setProfileError(null);
+      setIsLoading(true);
 
       if (!nextSession) {
         setUserData(null);
+        setIsLoading(false);
         route('/students/login');
         return;
       }
@@ -79,10 +82,12 @@ const Students = () => {
         const cachedProfile = readCachedStudentProfile(nextSession.user.id);
         if (cachedProfile) {
           setUserData(cachedProfile);
+          setIsLoading(false);
           return;
         }
 
         setProfileError(formatErrorMessage(error));
+        setIsLoading(false);
         return;
       }
 
@@ -90,6 +95,7 @@ const Students = () => {
       if (data) {
         writeCachedStudentProfile(nextSession.user.id, data);
       }
+      setIsLoading(false);
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -175,16 +181,19 @@ const Students = () => {
     }
 
     setProfileError(null);
+    setIsLoading(true);
     const { data, error } = await loadUserProfile(session.user.id);
 
     if (error) {
       const cachedProfile = readCachedStudentProfile(session.user.id);
       if (cachedProfile) {
         setUserData(cachedProfile);
+        setIsLoading(false);
         return;
       }
 
       setProfileError(formatErrorMessage(error));
+      setIsLoading(false);
       return;
     }
 
@@ -192,12 +201,10 @@ const Students = () => {
     if (data) {
       writeCachedStudentProfile(session.user.id, data);
     }
+    setIsLoading(false);
   };
 
-  if (
-    session === undefined ||
-    (session && userData === undefined && !profileError)
-  ) {
+  if (isLoading) {
     return (
       <section>
         <h1 className={styles.pageTitle}>生徒用ページ</h1>
@@ -221,7 +228,7 @@ const Students = () => {
     );
   }
 
-  if (profileError && userData === undefined) {
+  if (profileError && userData === null) {
     return (
       <section>
         <h1 className={styles.pageTitle}>生徒用ページ</h1>
@@ -236,7 +243,7 @@ const Students = () => {
     );
   }
 
-  if (!userData) {
+  if (userData === null) {
     return (
       <StudentLayout>
         <InitialRegistration onRegistered={handleRegistered} />
