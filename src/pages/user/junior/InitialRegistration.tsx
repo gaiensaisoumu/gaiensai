@@ -220,7 +220,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
         // supabase.auth.signUp を直接使うと、現在のセッションが保護者に切り替わってしまう可能性があるため
         const tempClient = createClient(
           import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_ANON_KEY,
+          import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
           { auth: { persistSession: false } },
         );
 
@@ -306,7 +306,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
           const parentPassword = accountSplit.savedParentBirthDate;
           const tempClient = createClient(
             import.meta.env.VITE_SUPABASE_URL,
-            import.meta.env.VITE_SUPABASE_ANON_KEY,
+            import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
             { auth: { persistSession: false } },
           );
 
