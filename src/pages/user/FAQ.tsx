@@ -356,7 +356,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     category: '中学生の方へ',
     question: '「中学生と保護者(共通のチケット使用)」を「中学生と保護者(別々のチケット使用)」に切り替えることはできますか?',
-    answer: '※執筆地点では未実装 可能です。マイページの最下部にある、「中学生アカウントと保護者アカウントで分割」ボタンをタップしてください。ただし、発券済みのチケットは一度全てキャンセルされます。また、一度分割したアカウントを統合したり、中学生のみ・保護者のみのアカウントを中学生・保護者両方のアカウントに変更することはできません。',
+    answer: '※執筆地点では未実装 可能です。マイページの最下部にある、「 中学生と保護者でアカウントを分割」ボタンをタップしてください。ただし、発券済みのチケットは一度全てキャンセルされます。また、一度分割したアカウントを統合したり、中学生のみ・保護者のみのアカウントを中学生・保護者両方のアカウントに変更することはできません。',
   },
   {
     category: '中学生の方へ',
@@ -578,7 +578,7 @@ const FAQ = () => {
         <>
           エラーメッセージとともに、外苑祭総務にお問い合わせいただくか、
           <a
-            href='https://docs.google.com/forms/d/e/1FAIpQLSeMds1IgEh7OBHcO5bYnSrUAWEp2fWdJ_yEBMyhywQrK2JgTw/viewform?usp=header'
+            href='https://docs.google.com/forms/d/e/1FAIpQLSfGsEXv2e1IoDbF2RjhrCyK5myHU0Dq-YJ4_3dHMhNeLAvjUg/viewform?usp=dialog'
             target='_blank'
             rel='noopener noreferrer'
           >
@@ -608,7 +608,7 @@ const FAQ = () => {
         <>
           ご連絡ありがとうございます。バグ報告は
           <a
-            href='https://docs.google.com/forms/d/e/1FAIpQLSeMds1IgEh7OBHcO5bYnSrUAWEp2fWdJ_yEBMyhywQrK2JgTw/viewform?usp=header'
+            href='https://docs.google.com/forms/d/e/1FAIpQLSfGsEXv2e1IoDbF2RjhrCyK5myHU0Dq-YJ4_3dHMhNeLAvjUg/viewform?usp=dialog'
             target='_blank'
             rel='noopener noreferrer'
           >

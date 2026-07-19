@@ -23,7 +23,9 @@ const GlobalNav = () => {
           <a href='/t'>チケット</a>
         </li>
         <li>
-          <a href='/pamphlet' onMouseEnter={() => preload(Pamphlet)}>パンフレット</a>
+          <a href='/pamphlet' onMouseEnter={() => preload(Pamphlet)}>
+            パンフレット
+          </a>
         </li>
         <li>
           <a href='/performances' onMouseEnter={() => preload(Performances)}>
@@ -31,13 +33,19 @@ const GlobalNav = () => {
           </a>
         </li>
         <li>
-          <a href='/timetable' onMouseEnter={() => preload(TimeTable)}>タイムテーブル</a>
+          <a href='/timetable' onMouseEnter={() => preload(TimeTable)}>
+            タイムテーブル
+          </a>
         </li>
         <li>
-          <a href='/info' onMouseEnter={() => preload(Info)}>ご来場の注意</a>
+          <a href='/info' onMouseEnter={() => preload(Info)}>
+            ご来場の注意
+          </a>
         </li>
         <li>
-          <a href='/map' onMouseEnter={() => preload(Map)}>校内マップ</a>
+          <a href='/map' onMouseEnter={() => preload(Map)}>
+            校内マップ
+          </a>
         </li>
         <li>
           <a href='https://www.metro.ed.jp/aoyama-h/access/access.html'>
@@ -45,10 +53,12 @@ const GlobalNav = () => {
           </a>
         </li>
         <li>
-          <a href='/faq' onMouseEnter={() => preload(FAQ)}>FAQ</a>
+          <a href='/faq' onMouseEnter={() => preload(FAQ)}>
+            FAQ
+          </a>
         </li>
         <li>
-          <a href='https://docs.google.com/forms/d/e/1FAIpQLSeMds1IgEh7OBHcO5bYnSrUAWEp2fWdJ_yEBMyhywQrK2JgTw/viewform?usp=header'>
+          <a href='https://docs.google.com/forms/d/e/1FAIpQLSfGsEXv2e1IoDbF2RjhrCyK5myHU0Dq-YJ4_3dHMhNeLAvjUg/viewform?usp=dialog'>
             お問い合わせ
           </a>
         </li>
