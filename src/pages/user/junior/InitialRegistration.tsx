@@ -582,6 +582,9 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
         >
           <div className={styles.modalContent}>
             <h2 id='parent-form-title'>保護者情報入力</h2>
+            <p>
+              ここで入力した情報を用いて、保護者のデバイスでログインをお願いします。
+            </p>
             <form
               onSubmit={handleParentFormSubmit}
               className={styles.parentForm}

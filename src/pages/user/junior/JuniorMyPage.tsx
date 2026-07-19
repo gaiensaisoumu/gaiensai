@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useCallback, useEffect, useState } from 'preact/hooks';
 import { IoMdAdd } from 'react-icons/io';
 import performancesSnapshot from '../../../generated/performances-static.json';
 import {
@@ -11,6 +11,7 @@ import { useTitle } from '../../../hooks/useTitle';
 import subPageStyles from '../../../styles/sub-pages.module.css';
 import sharedStyles from '../../../styles/shared.module.css';
 import dashboardStyles from '../students/Dashboard.module.css';
+import registrationStyles from '../students/InitialRegistration.module.css';
 import TicketListContent from '../../../features/tickets/TicketListContent';
 import type { TicketListSortMode } from '../../../features/tickets/IssuedTicketCardList';
 import NormalSection from '../../../components/ui/NormalSection';
@@ -25,6 +26,7 @@ import {
   resolveJuniorApplicationDays,
   serializeJuniorApplicationDaySelection,
 } from './applicationDay';
+import { createClient } from '@supabase/supabase-js';
 
 type TicketSnapshot = {
   performances?: Array<{
@@ -38,6 +40,16 @@ type TicketSnapshot = {
 };
 
 const ticketSnapshot = performancesSnapshot as TicketSnapshot;
+
+const JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID = 7;
+const SELF_RELATIONSHIP_ID = 1;
+const ISSUE_POLL_MAX_RETRIES = 20;
+const ISSUE_POLL_INTERVAL_MS = 300;
+
+type AccountSplitState = {
+  showConfirmation: boolean;
+  showParentForm: boolean;
+};
 
 type JuniorMyPageProps = {
   userData: Exclude<UserData, null>;
@@ -64,10 +76,265 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
   const [gymApplicationDays, setGymApplicationDays] = useState<Array<
     'day1' | 'day2'
   > | null>(null);
+  const [accountSplit, setAccountSplit] = useState<AccountSplitState>({
+    showConfirmation: false,
+    showParentForm: false,
+  });
+  const [parentGuardianId, setParentGuardianId] = useState('');
+  const [birthdayYear, setBirthdayYear] = useState('');
+  const [birthdayMonth, setBirthdayMonth] = useState('');
+  const [birthdayDay, setBirthdayDay] = useState('');
+  const [splitLoading, setSplitLoading] = useState(false);
+  const [splitErrorMessage, setSplitErrorMessage] = useState<string | null>(
+    null,
+  );
 
   const handleLogout = async () => {
+    window.localStorage.removeItem('junior_application_day');
     await supabase.auth.signOut();
   };
+
+  const handleSplitConfirmationYes = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const email = session?.user?.email;
+
+      const localPart = email?.replace('@gaiensai.local', '') ?? '';
+      const loginId = localPart.match(/^(.*)-\d{8}$/)?.[1] ?? localPart;
+
+      setParentGuardianId(loginId);
+      setAccountSplit((prev) => ({
+        ...prev,
+        showConfirmation: false,
+        showParentForm: true,
+      }));
+    } catch (error) {
+      setAccountSplit((prev) => ({
+        ...prev,
+        showConfirmation: false,
+        showParentForm: true,
+      }));
+    }
+  };
+
+  const handleSplitConfirmationNo = () => {
+    setAccountSplit((prev) => ({
+      ...prev,
+      showConfirmation: false,
+      showParentForm: false,
+    }));
+  };
+
+  const handleCloseSplit = () => {
+    setParentGuardianId('');
+    setBirthdayYear('');
+    setBirthdayMonth('');
+    setBirthdayDay('');
+    setSplitErrorMessage(null);
+    setAccountSplit((prev) => ({
+      ...prev,
+      showParentForm: false,
+      showConfirmation: false,
+    }));
+  };
+
+  const handleParentFormSubmit = async (event: Event) => {
+    event.preventDefault();
+
+    if (!parentGuardianId.trim()) {
+      setSplitErrorMessage('保護者のIDを入力してください。');
+      return;
+    }
+
+    if (!birthdayYear.trim() || !birthdayMonth.trim() || !birthdayDay.trim()) {
+      setSplitErrorMessage('保護者の誕生日を入力してください。');
+      return;
+    }
+
+    const normalizedBirthday =
+      birthdayYear.trim().padStart(4, '0') +
+      birthdayMonth.trim().padStart(2, '0') +
+      birthdayDay.trim().padStart(2, '0');
+
+    if (!/^\d{8}$/.test(normalizedBirthday)) {
+      setSplitErrorMessage('誕生日は8桁（例: 20100401）で入力してください。');
+      return;
+    }
+
+    setSplitLoading(true);
+    setSplitErrorMessage(null);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        setSplitErrorMessage('認証情報の取得に失敗しました。');
+        setSplitLoading(false);
+        return;
+      }
+
+      const parentEmail = `${parentGuardianId.trim()}-${normalizedBirthday}@gaiensai.local`;
+      const parentPassword = normalizedBirthday;
+
+      const tempClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        { auth: { persistSession: false } },
+      );
+
+      const { data: authData, error: authError } = await tempClient.auth.signUp(
+        {
+          email: parentEmail,
+          password: parentPassword,
+        },
+      );
+
+      if (authError || !authData.user) {
+        setSplitErrorMessage(
+          authError?.message === 'User already registered'
+            ? 'このID・パスワードの組み合わせは既に登録されています。'
+            : '保護者アカウントの作成に失敗しました。',
+        );
+        setSplitLoading(false);
+        return;
+      }
+
+      const { error: rpcError } = await supabase.rpc(
+        'split_existing_junior_account',
+        {
+          p_parent_auth_id: authData.user.id,
+          p_parent_email: parentEmail,
+        },
+      );
+
+      if (rpcError) {
+        setSplitErrorMessage('アカウント分割に失敗しました。');
+        setSplitLoading(false);
+        return;
+      }
+
+      const { error: juniorTicketError } = await supabase.functions.invoke(
+        'issue-tickets',
+        {
+          body: {
+            ticketTypeId: JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID,
+            relationshipId: SELF_RELATIONSHIP_ID,
+            performanceId: 0,
+            scheduleId: 0,
+            issueCount: 1,
+          },
+        },
+      );
+
+      if (juniorTicketError) {
+        setSplitErrorMessage('中学生用入場専用券の発券に失敗しました。');
+        setSplitLoading(false);
+        return;
+      }
+
+      try {
+        await tempClient.auth.signInWithPassword({
+          email: parentEmail,
+          password: parentPassword,
+        });
+
+        await tempClient.functions.invoke('issue-tickets', {
+          body: {
+            ticketTypeId: JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID,
+            relationshipId: SELF_RELATIONSHIP_ID,
+            performanceId: 0,
+            scheduleId: 0,
+            issueCount: 1,
+          },
+        });
+      } catch (parentIssueErr) {
+        // 保護者用チケット発券失敗は中学生側の登録プロセスを中断させない
+      }
+
+      let issued = false;
+      for (let i = 0; i < ISSUE_POLL_MAX_RETRIES; i++) {
+        const { count, error: ticketCheckError } = await supabase
+          .from('tickets')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'valid')
+          .eq('ticket_type', JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID);
+
+        if (!ticketCheckError && Number(count ?? 0) > 0) {
+          issued = true;
+          break;
+        }
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, ISSUE_POLL_INTERVAL_MS),
+        );
+      }
+
+      if (!issued) {
+        setSplitErrorMessage('入場専用券の反映確認に失敗しました。');
+        setSplitLoading(false);
+        return;
+      }
+
+      window.location.reload();
+    } catch (error) {
+      setSplitErrorMessage('予期しないエラーが発生しました。');
+      setSplitLoading(false);
+    }
+  };
+
+  const handleAccountSplit = async () => {
+    setAccountSplit((prev) => ({
+      ...prev,
+      showConfirmation: true,
+    }));
+  };
+
+  const classScheduleFilter = useCallback(
+    (scheduleId: number, roundName: string) => {
+      const day1Schedules = [1, 2, 3, 4];
+      const day2Schedules = [5, 6, 7, 8];
+      const allowedScheduleIds = [
+        ...(classApplicationDays?.includes('day1') ? day1Schedules : []),
+        ...(classApplicationDays?.includes('day2') ? day2Schedules : []),
+      ];
+      if (!allowedScheduleIds.includes(scheduleId)) {
+        return false;
+      }
+      if (
+        classApplicationDays?.includes('day1') &&
+        classApplicationDays?.includes('day2')
+      ) {
+        return true;
+      }
+      if (classApplicationDays?.includes('day1')) {
+        return !roundName.includes('2日目');
+      }
+      return roundName.includes('2日目');
+    },
+    [classApplicationDays],
+  );
+
+  const gymScheduleFilter = useCallback(
+    (_scheduleId: number, roundName: string) => {
+      if (
+        gymApplicationDays?.includes('day1') &&
+        gymApplicationDays?.includes('day2')
+      ) {
+        return true;
+      }
+      if (gymApplicationDays?.includes('day1')) {
+        return !roundName.includes('2日目');
+      }
+      return roundName.includes('2日目');
+    },
+    [gymApplicationDays],
+  );
 
   const localPart = userData.email.replace('@gaiensai.local', '');
   const loginId = localPart.match(/^(.*)-\d{8}$/)?.[1] ?? localPart;
@@ -592,31 +859,7 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
                     filterAccepting={true}
                     scheduleFilter={
                       classApplicationDays && classApplicationDays.length > 0
-                        ? (scheduleId, roundName) => {
-                            const day1Schedules = [1, 2, 3, 4];
-                            const day2Schedules = [5, 6, 7, 8];
-                            const allowedScheduleIds = [
-                              ...(classApplicationDays.includes('day1')
-                                ? day1Schedules
-                                : []),
-                              ...(classApplicationDays.includes('day2')
-                                ? day2Schedules
-                                : []),
-                            ];
-                            if (!allowedScheduleIds.includes(scheduleId)) {
-                              return false;
-                            }
-                            if (
-                              classApplicationDays.includes('day1') &&
-                              classApplicationDays.includes('day2')
-                            ) {
-                              return true;
-                            }
-                            if (classApplicationDays.includes('day1')) {
-                              return !roundName.includes('2日目');
-                            }
-                            return roundName.includes('2日目');
-                          }
+                        ? classScheduleFilter
                         : undefined
                     }
                   />
@@ -631,18 +874,7 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
                     filterAccepting={true}
                     scheduleFilter={
                       gymApplicationDays && gymApplicationDays.length > 0
-                        ? (_scheduleId, roundName) => {
-                            if (
-                              gymApplicationDays.includes('day1') &&
-                              gymApplicationDays.includes('day2')
-                            ) {
-                              return true;
-                            }
-                            if (gymApplicationDays.includes('day1')) {
-                              return !roundName.includes('2日目');
-                            }
-                            return roundName.includes('2日目');
-                          }
+                        ? gymScheduleFilter
                         : undefined
                     }
                   />
@@ -652,11 +884,188 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
           );
         })()}
       </NormalSection>
+
+      {usageType === 0 && (
+        <NormalSection>
+          <h2>アカウント管理</h2>
+
+          <p>
+            見たい公演が1席しか残っていない場合は、アカウントを分割することで予約ができるようになります。
+            ただし、発券中のチケットはすべてキャンセルされますのでご注意ください。
+          </p>
+          <button onClick={handleAccountSplit} disabled={splitLoading}>
+            中学生と保護者でアカウントを分割
+          </button>
+        </NormalSection>
+      )}
+
       <section>
         <button onClick={handleLogout} className={dashboardStyles.logoutBtn}>
           ログアウト
         </button>
       </section>
+
+      {/* アカウント分割確認ダイアログ */}
+      {accountSplit.showConfirmation && (
+        <div
+          className={registrationStyles.modal}
+          role='dialog'
+          aria-labelledby='split-dialog-title'
+        >
+          <div className={registrationStyles.modalContent}>
+            <h2 id='split-dialog-title'>アカウント分割確認</h2>
+            <p className={registrationStyles.modalText}>
+              中学生と保護者でアカウントを分割しますか？
+            </p>
+            <p className={registrationStyles.modalDescription}>
+              「はい」を選択すると、現在のアカウントを中学生アカウントとし、保護者用アカウントの情報を入力していただきます。
+            </p>
+            <p className={registrationStyles.modalDescription}>
+              なお、分割する際は現在発券中のすべてのチケットがキャンセルされます。また、この操作は取り消せません。
+            </p>
+            <div className={registrationStyles.modalActions}>
+              <button
+                type='button'
+                onClick={handleSplitConfirmationNo}
+                className={registrationStyles.modalButtonSecondary}
+              >
+                いいえ
+              </button>
+              <button
+                type='button'
+                onClick={handleSplitConfirmationYes}
+                className={registrationStyles.modalButtonPrimary}
+              >
+                はい
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 保護者情報入力フォーム */}
+      {accountSplit.showParentForm && (
+        <div
+          className={registrationStyles.modal}
+          role='dialog'
+          aria-labelledby='parent-form-title'
+        >
+          <div className={registrationStyles.modalContent}>
+            <h2 id='parent-form-title'>保護者情報入力</h2>
+            <p>
+              ここで入力した情報を用いて、保護者のデバイスでログインをお願いします。
+            </p>
+            <form
+              onSubmit={handleParentFormSubmit}
+              className={registrationStyles.parentForm}
+            >
+              <div className={registrationStyles.formGroup}>
+                <label htmlFor='parent-id' className={registrationStyles.label}>
+                  保護者のID (そのままでも可)
+                </label>
+                <input
+                  id='parent-id'
+                  type='text'
+                  className={registrationStyles.input}
+                  value={parentGuardianId}
+                  onChange={(e) => {
+                    setParentGuardianId(e.currentTarget.value);
+                  }}
+                  placeholder='例: 12345'
+                  required
+                />
+              </div>
+
+              <div className={registrationStyles.formGroup}>
+                <fieldset className={registrationStyles.birthdayFieldset}>
+                  <legend className={registrationStyles.birthdayLegend}>
+                    保護者の生年月日
+                  </legend>
+                  <label className={registrationStyles.birthdayLabel}>
+                    <input
+                      type='number'
+                      className={registrationStyles.birthdayInput}
+                      placeholder='2000'
+                      inputMode='numeric'
+                      value={birthdayYear}
+                      required={true}
+                      min={1000}
+                      max={9999}
+                      onChange={(e) => setBirthdayYear(e.currentTarget.value)}
+                    />
+                    <span>年</span>
+                  </label>
+                  <label className={registrationStyles.birthdayLabel}>
+                    <input
+                      type='number'
+                      className={registrationStyles.birthdayInput}
+                      placeholder='1'
+                      inputMode='numeric'
+                      value={birthdayMonth}
+                      required={true}
+                      min={1}
+                      max={12}
+                      onChange={(e) => setBirthdayMonth(e.currentTarget.value)}
+                    />
+                    <span>月</span>
+                  </label>
+                  <label className={registrationStyles.birthdayLabel}>
+                    <input
+                      type='number'
+                      className={registrationStyles.birthdayInput}
+                      placeholder='1'
+                      inputMode='numeric'
+                      value={birthdayDay}
+                      required={true}
+                      min={1}
+                      max={31}
+                      onChange={(e) => setBirthdayDay(e.currentTarget.value)}
+                    />
+                    <span>日</span>
+                  </label>
+                </fieldset>
+              </div>
+
+              {splitErrorMessage ? (
+                <p className={registrationStyles.error}>{splitErrorMessage}</p>
+              ) : null}
+
+              <div className={registrationStyles.modalActions}>
+                <button
+                  type='button'
+                  onClick={handleCloseSplit}
+                  className={registrationStyles.modalButtonSecondary}
+                  disabled={splitLoading}
+                >
+                  キャンセル
+                </button>
+                <button
+                  type='submit'
+                  className={registrationStyles.modalButtonPrimary}
+                  disabled={splitLoading}
+                >
+                  {splitLoading ? '分割中...' : '分割を実行'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {splitLoading && !accountSplit.showParentForm && (
+        <div
+          className={registrationStyles.loadingOverlay}
+          role='status'
+          aria-live='polite'
+        >
+          <div className={registrationStyles.loadingOverlayContent}>
+            <LoadingSpinner />
+            <p className={registrationStyles.loadingOverlayText}>
+              アカウント分割処理中です...
+            </p>
+          </div>
+        </div>
+      )}
     </>
   );
 };
