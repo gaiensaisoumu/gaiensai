@@ -25,7 +25,7 @@
     "uqr": "^0.1.2"
   },
   "devDependencies": {
-    "@eslint-react/eslint-plugin": "^5.17.1",
+    "@eslint-react/eslint-plugin": "^5.17.2",
     "@eslint/js": "^9.39.2",
     "@preact/preset-vite": "^2.10.5",
     "@types/node": "^26.1.1",
