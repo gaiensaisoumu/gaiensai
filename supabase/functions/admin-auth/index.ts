@@ -38,14 +38,12 @@ type AdminAuthRequest = {
   users?: unknown;
   studentId?: unknown;
   accountType?: unknown;
+  juniorPassword?: unknown;
+  secretCode?: unknown;
 };
 
 type TicketIssueMode =
-  | 'open'
-  | 'only-own'
-  | 'public-rehearsals'
-  | 'auto'
-  | 'off';
+  'open' | 'only-own' | 'public-rehearsals' | 'auto' | 'off';
 
 type TicketIssueModes = {
   classInvite: TicketIssueMode;
@@ -104,7 +102,10 @@ type AdminAuthBody =
       recordId: number;
       column: string;
       value: boolean | number;
-    };
+    }
+  | { mode: 'getJuniorPassword' }
+  | { mode: 'updateJuniorPassword'; juniorPassword: string }
+  | { mode: 'validateJuniorSecretCode'; secretCode: string };
 
 type AdminConfigRow = {
   id: number;
@@ -578,6 +579,26 @@ const parseBody = (body: unknown): AdminAuthBody => {
     return {
       mode: 'login',
       password: normalizePassword(password, 'password'),
+    };
+  }
+
+  if (action === 'updateJuniorPassword') {
+    const { juniorPassword } = body as AdminAuthRequest;
+    return {
+      mode: 'updateJuniorPassword',
+      juniorPassword: String(juniorPassword ?? ''),
+    };
+  }
+
+  if (action === 'getJuniorPassword') {
+    return { mode: 'getJuniorPassword' };
+  }
+
+  if (action === 'validateJuniorSecretCode') {
+    const { secretCode } = body as AdminAuthRequest;
+    return {
+      mode: 'validateJuniorSecretCode',
+      secretCode: String(secretCode ?? ''),
     };
   }
 
@@ -1626,6 +1647,83 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ updated: true }), {
         status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (body.mode === 'getJuniorPassword') {
+      const session = await requireValidSession(adminClient, req);
+
+      const { data: configData, error: configError } = await adminClient
+        .from('configs')
+        .select('junior_password')
+        .single();
+
+      if (configError) {
+        throw new HttpError(500, '合言葉の取得に失敗しました。');
+      }
+
+      await adminClient
+        .from('admin_sessions')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('id', session.id);
+
+      return new Response(
+        JSON.stringify({
+          hasPassword:
+            configData.junior_password !== null &&
+            configData.junior_password !== '',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    if (body.mode === 'updateJuniorPassword') {
+      const session = await requireValidSession(adminClient, req);
+
+      // pgcryptoを使用してハッシュ化（RPC関数との互換性のため）
+      const { data: hashData, error: hashError } = await adminClient.rpc(
+        'hash_password',
+        { p_password: body.juniorPassword },
+      );
+
+      if (hashError || !hashData) {
+        throw new HttpError(500, '合言葉のハッシュ化に失敗しました。');
+      }
+
+      const { error: updateError } = await adminClient
+        .from('configs')
+        .update({ junior_password: hashData })
+        .eq('id', 1);
+
+      if (updateError) {
+        throw new HttpError(500, '合言葉の更新に失敗しました。');
+      }
+
+      await adminClient
+        .from('admin_sessions')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('id', session.id);
+
+      return new Response(JSON.stringify({ updated: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (body.mode === 'validateJuniorSecretCode') {
+      // pgcryptoを使用して検証（RPC関数との互換性のため）
+      const { data: isValid, error: validateError } = await adminClient.rpc(
+        'validate_junior_secret_code',
+        { p_secret_code: body.secretCode },
+      );
+
+      if (validateError) {
+        throw new HttpError(500, '合言葉の検証に失敗しました。' + validateError.message);
+      }
+
+      return new Response(JSON.stringify({ valid: isValid || false }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

@@ -29,11 +29,7 @@ type ControlPanelSettings = {
 };
 
 type TicketTypeControlValue =
-  | 'open'
-  | 'only-own'
-  | 'public-rehearsals'
-  | 'auto'
-  | 'off';
+  'open' | 'only-own' | 'public-rehearsals' | 'auto' | 'off';
 
 type TicketTypeControlKey =
   | 'classInvite'
@@ -246,6 +242,17 @@ const SettingsContent = () => {
     'performances' | 'gym_performances' | 'schedules' | 'relationships'
   >('performances');
   const [isModalSubmitting, setIsModalSubmitting] = useState(false);
+  const [juniorPassword, setJuniorPassword] = useState('');
+  const [juniorPasswordConfirm, setJuniorPasswordConfirm] = useState('');
+  const [hasJuniorPassword, setHasJuniorPassword] = useState(false);
+  const [isUpdatingJuniorPassword, setIsUpdatingJuniorPassword] =
+    useState(false);
+  const [juniorPasswordError, setJuniorPasswordError] = useState<string | null>(
+    null,
+  );
+  const [juniorPasswordSuccess, setJuniorPasswordSuccess] = useState<
+    string | null
+  >(null);
 
   useTitle('コントロールパネル - 管理画面');
 
@@ -407,7 +414,9 @@ const SettingsContent = () => {
       }
 
       const deletedTicketCount =
-        typeof data.deletedTicketCount === 'number' ? data.deletedTicketCount : 0;
+        typeof data.deletedTicketCount === 'number'
+          ? data.deletedTicketCount
+          : 0;
       setSettingsSuccess(
         `合計 ${deletedTicketCount} 件のチケットを削除し、カウンターをリセットしました。`,
       );
@@ -464,27 +473,38 @@ const SettingsContent = () => {
 
         if (isActive) {
           // テーブルデータのフェッチ
-          const [{ data: cp }, { data: gp }, { data: sch }, { data: rel }] =
-            await Promise.all([
-              supabase
-                .from('class_performances')
-                .select(
-                  'id, class_name, is_accepting, total_capacity, junior_capacity',
-                )
-                .order('class_name'),
-              supabase
-                .from('gym_performances')
-                .select('id, group_name, round_name, is_accepting, capacity')
-                .order('id'),
-              supabase
-                .from('performances_schedule')
-                .select('id, round_name, is_active')
-                .order('id'),
-              supabase
-                .from('relationships')
-                .select('id, name, is_accepting')
-                .order('id'),
-            ]);
+          const [
+            { data: cp },
+            { data: gp },
+            { data: sch },
+            { data: rel },
+            { data: jp },
+          ] = await Promise.all([
+            supabase
+              .from('class_performances')
+              .select(
+                'id, class_name, is_accepting, total_capacity, junior_capacity',
+              )
+              .order('class_name'),
+            supabase
+              .from('gym_performances')
+              .select('id, group_name, round_name, is_accepting, capacity')
+              .order('id'),
+            supabase
+              .from('performances_schedule')
+              .select('id, round_name, is_active')
+              .order('id'),
+            supabase
+              .from('relationships')
+              .select('id, name, is_accepting')
+              .order('id'),
+            supabase.functions.invoke('admin-auth', {
+              body: { action: 'getJuniorPassword' },
+              headers: {
+                'x-admin-session-token': token,
+              },
+            }),
+          ]);
 
           if (cp) {
             setClassPerformances(cp);
@@ -497,6 +517,9 @@ const SettingsContent = () => {
           }
           if (rel) {
             setRelationships(rel);
+          }
+          if (jp && !jp.error) {
+            setHasJuniorPassword(jp.hasPassword || false);
           }
 
           const activeTicketTypeIds = nextSettings.activeTicketTypeIds
@@ -964,6 +987,59 @@ const SettingsContent = () => {
     });
   };
 
+  const handleJuniorPasswordUpdate = async (event: Event) => {
+    event.preventDefault();
+    setJuniorPasswordError(null);
+    setJuniorPasswordSuccess(null);
+
+    if (juniorPassword.length < 4) {
+      setJuniorPasswordError('合言葉は4文字以上で入力してください。');
+      return;
+    }
+
+    if (juniorPassword !== juniorPasswordConfirm) {
+      setJuniorPasswordError('合言葉と確認用合言葉が一致しません。');
+      return;
+    }
+
+    setIsUpdatingJuniorPassword(true);
+
+    try {
+      const token = getSessionToken();
+      if (!token) {
+        throw new Error('セッションがありません。再ログインしてください。');
+      }
+
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: {
+          action: 'updateJuniorPassword',
+          juniorPassword,
+        },
+        headers: {
+          'x-admin-session-token': token,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.updated) {
+        throw new Error('合言葉の更新に失敗しました。');
+      }
+
+      setJuniorPassword('');
+      setJuniorPasswordConfirm('');
+      setHasJuniorPassword(true);
+      setJuniorPasswordSuccess('合言葉を更新しました。');
+    } catch (error) {
+      const message = await readErrorMessage(error);
+      setJuniorPasswordError(`合言葉の更新に失敗しました。${message}`);
+    } finally {
+      setIsUpdatingJuniorPassword(false);
+    }
+  };
+
   return (
     <div>
       {!isSettingsLoading && settings.eventYear !== config.year && (
@@ -1063,6 +1139,64 @@ const SettingsContent = () => {
         <a href='/admin/junior-accounts' className={styles.linkButton}>
           こちらで変更
         </a>
+      </NormalSection>
+
+      <NormalSection>
+        <h2>中学生用合言葉設定</h2>
+        <p className={styles.noteText}>
+          中学生アカウント登録時に必要な合言葉を設定します。
+        </p>
+        <div className={styles.formGroup}>
+          <label className={styles.settingLabel}>現在の合言葉設定</label>
+          <p className={styles.fieldValue}>
+            {hasJuniorPassword ? '設定済み' : '未設定'}
+          </p>
+        </div>
+        <form onSubmit={handleJuniorPasswordUpdate}>
+          <div className={styles.formGroup}>
+            <label htmlFor='junior-password' className={styles.label}>
+              新しい合言葉
+            </label>
+            <input
+              id='junior-password'
+              type='text'
+              className={styles.input}
+              value={juniorPassword}
+              onChange={(e) => setJuniorPassword(e.currentTarget.value)}
+              placeholder='4文字以上の合言葉'
+              minLength={4}
+              required
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor='junior-password-confirm' className={styles.label}>
+              合言葉（確認）
+            </label>
+            <input
+              id='junior-password-confirm'
+              type='text'
+              className={styles.input}
+              value={juniorPasswordConfirm}
+              onChange={(e) => setJuniorPasswordConfirm(e.currentTarget.value)}
+              placeholder='同じ合言葉を再度入力'
+              minLength={4}
+              required
+            />
+          </div>
+          {juniorPasswordError && (
+            <p className={styles.authError}>{juniorPasswordError}</p>
+          )}
+          {juniorPasswordSuccess && (
+            <p className={styles.authSuccess}>{juniorPasswordSuccess}</p>
+          )}
+          <button
+            type='submit'
+            className={styles.submitButton}
+            disabled={isUpdatingJuniorPassword}
+          >
+            {isUpdatingJuniorPassword ? '更新中...' : '合言葉を更新'}
+          </button>
+        </form>
       </NormalSection>
 
       <NormalSection>

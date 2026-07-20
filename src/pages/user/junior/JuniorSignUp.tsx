@@ -45,6 +45,7 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
       );
       return classDay === null && gymDay === null;
     });
+  const [secretCode, setSecretCode] = useState('');
 
   const [session, setSession] = useState<Session>(null);
 
@@ -183,6 +184,29 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
 
     setLoading(true);
 
+    // 合言葉の検証（Edge Functionで実行）
+    const { data: validationData, error: validationError } =
+      await supabase.functions.invoke('admin-auth', {
+        body: {
+          action: 'validateJuniorSecretCode',
+          secretCode: secretCode.trim(),
+        },
+      });
+
+    if (validationError) {
+      setErrorMessage(
+        '合言葉の検証に失敗しました。時間をおいて再度お試しください。',
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (!validationData?.valid) {
+      setErrorMessage('合言葉が正しくありません。');
+      setLoading(false);
+      return;
+    }
+
     try {
       // 保護者のみの場合は保護者情報をメインとして使用
       const isParentOnly = juniorUsageType === 3;
@@ -258,6 +282,7 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
             p_parent_auth_id: parentAuthData.user.id,
             p_parent_email: parentEmail,
             p_application_day: normalizedApplicationDay,
+            p_secret_code: secretCode.trim(),
           },
         );
         registerError = rpcError;
@@ -266,6 +291,7 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
         const { error } = await supabase.rpc('register_junior', {
           junior_usage_type: juniorUsageType,
           p_application_day: normalizedApplicationDay,
+          p_secret_code: secretCode.trim(),
         });
         registerError = error;
       }
@@ -665,6 +691,24 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
               </div>
             </NormalSection>
           )}
+
+          <NormalSection>
+            <h2 style={{ marginBottom: '0.5rem' }}>合言葉</h2>
+            <div className={styles.formGroup}>
+              <label htmlFor='secret-code' className={styles.label}>
+                合言葉
+              </label>
+              <input
+                id='secret-code'
+                type='text'
+                className={styles.input}
+                value={secretCode}
+                onChange={(e) => setSecretCode(e.currentTarget.value)}
+                placeholder='当選メールに記載された合言葉を入力'
+                required
+              />
+            </div>
+          </NormalSection>
 
           {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
           <button
