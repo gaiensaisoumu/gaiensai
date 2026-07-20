@@ -1,4 +1,7 @@
 User-agent: *
 Disallow: /students/
+Disallow: /junior/
 Disallow: /admin/
+Allow: /junior/login
+Allow: /students/login
 Allow: /

@@ -349,6 +349,43 @@
   transform: translateY(0);
 }
 
+.submitButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--primary-color);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.registrationContainer {
+  margin: 0 auto;
+  padding: 1rem;
+  padding-top: 0;
+}
+
+.h3WithIcon {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding-top: 0.5em;
+}
+
 
 .birthdayFieldset {
   border: none;

@@ -11,6 +11,7 @@ import { useTitle } from '../../../hooks/useTitle';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
 import NormalSection from '../../../components/ui/NormalSection';
+import { IoMdHelpCircleOutline } from 'react-icons/io';
 
 type InitialRegistrationProps = {
   onRegistered: (commit?: boolean) => Promise<boolean>;
@@ -31,6 +32,7 @@ type AccountSplitState = {
 
 const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
   const [juniorUsageType, setJuniorUsageType] = useState<number>(0);
+  const [prevJuniorUsageType, setPrevJuniorUsageType] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [isIssuingTicket, setIsIssuingTicket] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,6 +63,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
     setJuniorUsageType(type);
     // 「別々のチケット使用」を選択した場合、確認ダイアログを表示
     if (type === 1) {
+      setPrevJuniorUsageType(juniorUsageType);
       setAccountSplit((prev) => ({
         ...prev,
         showConfirmation: true,
@@ -100,6 +103,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
       showConfirmation: false,
       showParentForm: false,
     }));
+    setJuniorUsageType(prevJuniorUsageType ?? 0); // 「中学生と保護者(共通のチケット使用)」に戻す
   };
 
   const handleCloseSplit = () => {
@@ -109,6 +113,8 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
     setBirthdayMonth('');
     setBirthdayDay('');
     setErrorMessage(null);
+
+    setJuniorUsageType(prevJuniorUsageType ?? 0); // 「中学生と保護者(共通のチケット使用)」に戻す
 
     setAccountSplit((prev) => ({
       ...prev,
@@ -429,6 +435,9 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
       <form className={styles.form} onSubmit={handleSubmit}>
         <NormalSection>
           <h2 style={{ marginBottom: '0.5rem' }}>利用形態</h2>
+          <p>
+            「中学生と保護者(共通のチケット使用)」から「別々のチケットを使用」への変更以外は、後から変更できませんのでご注意ください。
+          </p>
           <div className={styles.usageTypeSelection}>
             <label
               className={`${styles.usageTypeButton} ${
@@ -517,6 +526,31 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
                 変更
               </button>
             </div>
+          )}
+
+          {juniorUsageType === 0 && (
+            <>
+              <h3 className={styles.h3WithIcon}>
+                <IoMdHelpCircleOutline />
+                中学生と保護者(共通のチケット使用)とは
+              </h3>
+              <p>
+                1枚のチケットを発行するだけで、保護者と中学生2名分を使えるチケットです。チケットはURLを送信すれば、別々の端末でも表示可能です。
+                同じ公演を見る予定の場合には便利ですが、残り1席の公演は予約できません。
+              </p>
+            </>
+          )}
+          {juniorUsageType === 1 && (
+            <>
+              <h3 className={styles.h3WithIcon}>
+                <IoMdHelpCircleOutline />
+                中学生と保護者(別々のチケット使用)とは
+              </h3>
+              <p>
+                中学生アカウントと保護者用アカウントの2つを作成して、それぞれでチケットを取得する方式です。ここで入力した保護者情報を用いて、保護者の端末でログインしてください。
+                中学生と保護者で別々の公演を見たい場合、または残り1席の公演が見たい場合におすすめです。
+              </p>
+            </>
           )}
         </NormalSection>
 

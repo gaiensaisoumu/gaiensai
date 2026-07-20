@@ -20,6 +20,7 @@ import Login from './Login';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { useTitle } from '../../../hooks/useTitle';
 import InitialRegistration from './InitialRegistration';
+import JuniorSignUp from './JuniorSignUp';
 
 type AuthState = Session | undefined;
 const JUNIOR_AFFILIATION_THRESHOLD = 100000;
@@ -95,6 +96,34 @@ const Junior = () => {
     return false;
   };
 
+  // 無限ループを防ぐため、パスごとにリカバリーを試行したかを記録するState
+  const [hasAttemptedRecovery, setHasAttemptedRecovery] = useState(false);
+
+  // パスが変わるたびにリカバリーフラグをリセット
+  useEffect(() => {
+    setHasAttemptedRecovery(false);
+  }, [path]);
+
+  // userDataがnullの場合に、InitialRegistrationを見せる前にローディング画面を挟んで再取得を試みる
+  useEffect(() => {
+    if (
+      session &&
+      userData === null &&
+      !isLoading &&
+      !profileError &&
+      path !== '/junior/signup' &&
+      !hasAttemptedRecovery
+    ) {
+      setHasAttemptedRecovery(true); // 状態を更新
+      const recoverProfile = async () => {
+        setIsLoading(true); // 既存のLoadingSpinnerが表示されます
+        await handleRegistered(true); // 3回(最大600ms)DBの更新を待ちます
+        setIsLoading(false);
+      };
+      void recoverProfile();
+    }
+  }, [session, userData, isLoading, profileError, path, hasAttemptedRecovery]);
+
   useEffect(() => {
     const loadProfile = async (nextSession: Session) => {
       setSession(nextSession);
@@ -104,7 +133,11 @@ const Junior = () => {
       if (!nextSession) {
         setUserData(null);
         setIsLoading(false);
-        route(preserveQuery('/junior/login'));
+        if (path === '/junior/signup') {
+          route(preserveQuery('/junior/signup'));
+        } else if (path !== '/') {
+          route(preserveQuery('/junior/login'));
+        }
         return;
       }
 
@@ -170,7 +203,10 @@ const Junior = () => {
 
     if (
       userData &&
-      (path === '/junior' || path === '/junior/login' || path === '/junior/')
+      (path === '/junior' ||
+        path === '/junior/login' ||
+        path === '/junior/signup' ||
+        path === '/junior/')
     ) {
       route(preserveQuery('/junior/mypage'));
     }
@@ -205,6 +241,13 @@ const Junior = () => {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    // 登録完了後に /junior/mypage に飛んできた際、userDataがまだnullなら再取得する
+    if (session && userData === null && path === '/junior/mypage') {
+      void retryLoadProfile();
+    }
+  }, [path]);
+
   if (isLoading) {
     return (
       <section>
@@ -221,14 +264,16 @@ const Junior = () => {
     );
   }
 
-  if (!session) {
+  if (!session || path === '/junior/signup') {
     return (
       <JuniorLayout>
-        <Login />
+        <Router>
+          <Route path='/signup' component={JuniorSignUp} />
+          <Route default component={Login} />
+        </Router>
       </JuniorLayout>
     );
   }
-
   if (profileError && userData === null) {
     return (
       <section>

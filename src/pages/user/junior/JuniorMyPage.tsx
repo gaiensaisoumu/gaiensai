@@ -27,6 +27,7 @@ import {
   serializeJuniorApplicationDaySelection,
 } from './applicationDay';
 import { createClient } from '@supabase/supabase-js';
+import { useLocation } from 'preact-iso';
 
 type TicketSnapshot = {
   performances?: Array<{
@@ -89,9 +90,12 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
     null,
   );
 
+  const { route } = useLocation();
+
   const handleLogout = async () => {
     window.localStorage.removeItem('junior_application_day');
     await supabase.auth.signOut();
+    route('/junior/login');
   };
 
   const handleSplitConfirmationYes = async () => {

@@ -100,7 +100,7 @@ const JuniorLogin = () => {
         <h2>中学生ログイン</h2>
         <p>当選メールのURLから登録した、ログインIDと誕生日を入力してください。</p>
         <form onSubmit={handleLogin} className={styles.loginForm}>
-          <label>ID</label>
+          <label>ID(英数字・フルネームなど登録したもの)</label>
           <input
             type='text'
             placeholder='Your ID'
