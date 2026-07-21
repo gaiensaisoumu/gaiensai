@@ -261,10 +261,6 @@ const Home = () => {
           />
         </div>
         <div className={styles.buttonLinkSection}>
-          <a href='/pamphlet' className={styles.buttonLink}>
-            <BiSolidFoodMenu />
-            デジタルパンフレット
-          </a>
           <a
             href='/performances'
             className={styles.buttonLink}
@@ -276,6 +272,10 @@ const Home = () => {
           <a href='/timetable' className={styles.buttonLink}>
             <GrSchedulePlay />
             タイムテーブル
+          </a>
+          <a href='/pamphlet' className={styles.buttonLink}>
+            <BiSolidFoodMenu />
+            デジタルパンフレット
           </a>
         </div>
       </section>

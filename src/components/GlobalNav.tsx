@@ -24,11 +24,6 @@ const GlobalNav = () => {
           <a href='/t'>チケット</a>
         </li>
         <li>
-          <a href='/pamphlet' onMouseEnter={() => preload(Pamphlet)}>
-            パンフレット
-          </a>
-        </li>
-        <li>
           <a href='/performances' onMouseEnter={() => preload(Performances)}>
             公演一覧
           </a>
@@ -36,6 +31,11 @@ const GlobalNav = () => {
         <li>
           <a href='/timetable' onMouseEnter={() => preload(TimeTable)}>
             タイムテーブル
+          </a>
+        </li>
+        <li>
+          <a href='/pamphlet' onMouseEnter={() => preload(Pamphlet)}>
+            パンフレット
           </a>
         </li>
         <li>
