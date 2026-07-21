@@ -565,7 +565,7 @@ export const MiniGame = () => {
       <div style={{ margin: '20px auto', maxWidth: '600px' }}>
         <NormalSection>
           <h2>遊び方</h2>
-          <p>画面をタップして、ひよこが緑の土管に当たらないように操作しよう!</p>
+          <p>画面をタップして、ひよこが緑の土管や地面、画面の端に当たらないように操作しよう!</p>
         </NormalSection>
         <NormalSection>
           <h2>🏆 リーダーボード</h2>
