@@ -268,7 +268,7 @@ export const MiniGame = () => {
           fontFamily: 'monospace',
         }}
       >
-        {/* === ゲーム描画レイヤー（端末に合わせて縮小される領域） === */}
+        {/* === ゲーム描画レイヤー === */}
         <div
           style={{
             position: 'absolute',
@@ -337,7 +337,7 @@ export const MiniGame = () => {
           />
         </div>
 
-        {/* === UIレイヤー（縮小されず、常にコンテナの100%サイズを維持） === */}
+        {/* === スコア表示レイヤー === */}
         <div
           style={{
             position: 'absolute',
@@ -350,7 +350,7 @@ export const MiniGame = () => {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '2px',
-            pointerEvents: 'none', // クリックを下のレイヤーに貫通させる
+            pointerEvents: 'none',
           }}
         >
           <span
@@ -381,191 +381,203 @@ export const MiniGame = () => {
           )}
         </div>
 
+        {/* === UIレイヤー（START / GAME OVER） === */}
         {gameState !== 'playing' && (
           <div
             style={{
               position: 'absolute',
               inset: '0',
               backgroundColor: 'rgba(0, 0, 0, 0.75)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
               zIndex: 20,
-              padding: '20px',
-              boxSizing: 'border-box',
+              overflowY: 'auto', // オーバーレイ全体をスクロール可能に変更
             }}
           >
-            {gameState === 'start' ? (
-              <>
-                <h2
-                  style={{
-                    margin: '0 0 10px 0',
-                    fontSize: '28px',
-                    textAlign: 'center',
-                  }}
-                >
-                  FLAPPY GAIENSAI
-                </h2>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    resetGame();
-                  }}
-                  style={{
-                    padding: '10px 24px',
-                    backgroundColor: '#73bf2e',
-                    border: 'none',
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  START
-                </button>
-              </>
-            ) : (
-              <>
-                <h2
-                  style={{
-                    margin: '0 0 4px 0',
-                    color: '#ff5555',
-                    fontSize: '26px',
-                  }}
-                >
-                  GAME OVER
-                </h2>
-                <p style={{ margin: '0 0 12px 0', fontSize: '18px' }}>
-                  SCORE: {score} (BEST: {highScore})
-                </p>
-                {!isSubmitted ? (
-                  <form
-                    onSubmit={handleSubmitScore}
-                    onClick={(e) => e.stopPropagation()}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100%', // 画面高に満たない場合は中央揃え
+                padding: '20px',
+                boxSizing: 'border-box',
+                color: '#fff',
+              }}
+            >
+              {gameState === 'start' ? (
+                <>
+                  <h2
                     style={{
-                      display: 'flex',
-                      gap: '6px',
-                      marginBottom: '16px',
+                      margin: '0 0 10px 0',
+                      fontSize: '28px',
+                      textAlign: 'center',
                     }}
                   >
-                    <input
-                      type='text'
-                      placeholder='名前 (10文字以内)'
-                      value={playerName}
-                      onInput={(e) =>
-                        setPlayerName((e.target as HTMLInputElement).value)
-                      }
-                      maxLength={10}
+                    FLAPPY GAIENSAI
+                  </h2>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetGame();
+                    }}
+                    style={{
+                      padding: '10px 24px',
+                      backgroundColor: '#73bf2e',
+                      border: 'none',
+                      color: '#fff',
+                      fontWeight: 'bold',
+                      borderRadius: '20px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    START
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2
+                    style={{
+                      margin: '0 0 4px 0',
+                      color: '#ff5555',
+                      fontSize: '26px',
+                    }}
+                  >
+                    GAME OVER
+                  </h2>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '18px' }}>
+                    SCORE: {score} (BEST: {highScore})
+                  </p>
+                  {!isSubmitted ? (
+                    <form
+                      onSubmit={handleSubmitScore}
+                      onClick={(e) => e.stopPropagation()}
                       style={{
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid #444',
-                        backgroundColor: '#222',
-                        color: '#fff',
-                        fontSize: '13px',
-                      }}
-                    />
-                    <button
-                      type='submit'
-                      disabled={isSubmitting || !playerName.trim()}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#3182ce',
-                        border: 'none',
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '13px',
+                        display: 'flex',
+                        gap: '6px',
+                        marginBottom: '16px',
                       }}
                     >
-                      登録
-                    </button>
-                  </form>
-                ) : (
-                  <p
-                    style={{
-                      color: '#48bb78',
-                      fontSize: '13px',
-                      margin: '0 0 16px 0',
-                    }}
-                  >
-                    登録しました！
-                  </p>
-                )}
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: '260px',
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    padding: '10px 14px',
-                    marginBottom: '16px',
-                    fontSize: '13px',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 'bold',
-                      color: '#ffe600',
-                      marginBottom: '6px',
-                      borderBottom: '1px solid rgba(255,255,255,0.2)',
-                      paddingBottom: '4px',
-                    }}
-                  >
-                    🏆 TOP {LIMIT_COUNT} LEADERBOARD
-                  </div>
-                  {leaderboard.length === 0 ? (
-                    <div style={{ color: '#aaa' }}>データなし</div>
-                  ) : (
-                    leaderboard.map((item, idx) => (
-                      <div
-                        key={item.id}
+                      <input
+                        type='text'
+                        placeholder='名前 (10文字以内)'
+                        value={playerName}
+                        onInput={(e) =>
+                          setPlayerName((e.target as HTMLInputElement).value)
+                        }
+                        maxLength={10}
                         style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          margin: '3px 0',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid #444',
+                          backgroundColor: '#222',
+                          color: '#fff',
+                          fontSize: '13px',
+                        }}
+                      />
+                      <button
+                        type='submit'
+                        disabled={isSubmitting || !playerName.trim()}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#3182ce',
+                          border: 'none',
+                          color: '#fff',
+                          fontWeight: 'bold',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
                         }}
                       >
-                        <span>
-                          {idx + 1}. {item.player_name}
-                        </span>
-                        <span style={{ fontWeight: 'bold' }}>
-                          {item.score} pt
-                        </span>
-                      </div>
-                    ))
+                        登録
+                      </button>
+                    </form>
+                  ) : (
+                    <p
+                      style={{
+                        color: '#48bb78',
+                        fontSize: '13px',
+                        margin: '0 0 16px 0',
+                      }}
+                    >
+                      登録しました！
+                    </p>
                   )}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    resetGame();
-                  }}
-                  style={{
-                    padding: '10px 24px',
-                    backgroundColor: '#27c93f',
-                    border: 'none',
-                    color: '#fff',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🔄 もう一度
-                </button>
-              </>
-            )}
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: '260px',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      marginBottom: '16px',
+                      fontSize: '13px',
+                      maxHeight: '150px', // ランキングが長すぎる場合は内部スクロール
+                      overflowY: 'auto',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#ffe600',
+                        marginBottom: '6px',
+                        borderBottom: '1px solid rgba(255,255,255,0.2)',
+                        paddingBottom: '4px',
+                      }}
+                    >
+                      🏆 TOP {LIMIT_COUNT} LEADERBOARD
+                    </div>
+                    {leaderboard.length === 0 ? (
+                      <div style={{ color: '#aaa' }}>データなし</div>
+                    ) : (
+                      leaderboard.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            margin: '3px 0',
+                          }}
+                        >
+                          <span>
+                            {idx + 1}. {item.player_name}
+                          </span>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {item.score} pt
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetGame();
+                    }}
+                    style={{
+                      padding: '10px 24px',
+                      backgroundColor: '#27c93f',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      borderRadius: '20px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔄 もう一度
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
       <div style={{ margin: '20px auto', maxWidth: '600px' }}>
         <NormalSection>
           <h2>遊び方</h2>
-          <p>画面をタップして、ひよこが緑の土管や地面、画面の端に当たらないように操作しよう!</p>
+          <p>
+            画面をタップして、ひよこが緑の土管や地面、画面の端に当たらないように操作しよう!
+          </p>
         </NormalSection>
         <NormalSection>
           <h2>🏆 リーダーボード</h2>

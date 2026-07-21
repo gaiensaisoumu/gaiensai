@@ -32,7 +32,7 @@ const CREDIT_LOGS = [
   '[ORGANIZATION CHART]',
   '  Our Teachers',
   '   └─ Gaiensai Festival General Affairs Committee',
-  '      └─ Rio Gunawan (CEO/CTO/Lead Developer)',
+  '      └─ Rio Gunawan (CTO / Project Manager / Lead Developer)',
   '         └─ Rio Gunawan (Sub-Developer)',
   '             └─ Rio Gunawan (Intern / Coffee Fetcher)',
   ' ',
