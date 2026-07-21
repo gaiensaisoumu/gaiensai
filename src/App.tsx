@@ -46,6 +46,7 @@ import './styles/color-settings.css';
 import './styles/index.css';
 import subPageStyles from './styles/sub-pages.module.css';
 import { useTicketCleanup } from './features/tickets/useTicketCleanup';
+import { PWAUpdateToast } from './components/PWAUpdateToast';
 
 const userPageLayout = () => (
   <MainLayout>
@@ -157,6 +158,7 @@ const App = () => {
       <ErrorBoundary>
         <InnerApp />
       </ErrorBoundary>
+      <PWAUpdateToast />
     </LocationProvider>
   );
 };

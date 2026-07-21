@@ -82,7 +82,9 @@ const parsedConfig = readConfigYaml();
 const pwaIncludeAssets = Array.isArray(parsedConfig.pwa_include_assets)
   ? parsedConfig.pwa_include_assets
   : ['favicon.ico', 'apple-touch-icon.png', 'favicon.svg'];
-const pwaManifestName = String(parsedConfig.pwa_manifest_name ?? '外苑祭 公式サイト');
+const pwaManifestName = String(
+  parsedConfig.pwa_manifest_name ?? '外苑祭 公式サイト',
+);
 const pwaManifestShortName = String(
   parsedConfig.pwa_manifest_short_name ?? pwaManifestName,
 );
@@ -116,7 +118,7 @@ export default defineConfig({
   plugins: [
     preact(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: pwaIncludeAssets,
       manifest: {
         name: pwaManifestName,
@@ -139,6 +141,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        skipWaiting: false, // ボタンを押すまで待機させる（promptモードの基本）
+        clientsClaim: true, // アクティブになったら即座に制御を開始する
         globPatterns: [
           '**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,json,yaml}',
         ],

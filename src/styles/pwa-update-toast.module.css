@@ -1,0 +1,148 @@
+.pwaUpdateToast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+}
+
+.pwaUpdateToastContent {
+  background: var(--translucent-gray-bg-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 16px 20px;
+  max-width: 320px;
+  border: 1px solid var(--translucent-w-bg-color);
+}
+
+.pwaUpdateToastMessage {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--heading-text-color);
+  line-height: 1.5;
+}
+
+.pwaUpdateToastButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.pwaUpdateToastButton {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.pwaUpdateToastButtonUpdate {
+  background: var(--primary-color);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.pwaUpdateToastButtonUpdate:hover {
+  background: var(--brighter-primary-color);
+}
+
+.pwaUpdateToastButtonDismiss {
+  background: var(--normal-section-bg-color);
+  color: var(--main-text-color);
+}
+
+.pwaUpdateToastButtonDismiss:hover {
+  background: var(--normal-section-bg-color);
+}
+
+.pwaUpdateWarningOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.pwaUpdateWarningDialog {
+  background: var(--main-bg-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.pwaUpdateWarningTitle {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--error-text-color);
+}
+
+.pwaUpdateWarningMessage {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--main-text-color);
+  line-height: 1.6;
+}
+
+.pwaUpdateWarningButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.pwaUpdateWarningButton {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.pwaUpdateWarningButtonCancel {
+  background: var(--normal-section-bg-color);
+  color: var(--main-text-color);
+}
+
+.pwaUpdateWarningButtonCancel:hover {
+  background: var(--normal-section-bg-color);
+}
+
+.pwaUpdateWarningButtonConfirm {
+  background: var(--error-text-color);
+  color: var(--heading-text-color);
+  font-weight: 600;
+}
+
+.pwaUpdateWarningButtonConfirm:hover {
+  background: var(--error-text-color);
+}
+
+@media (max-width: 640px) {
+  .pwaUpdateToast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .pwaUpdateToastContent {
+    max-width: none;
+  }
+}
