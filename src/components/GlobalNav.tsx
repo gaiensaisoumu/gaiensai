@@ -69,7 +69,7 @@ const GlobalNav = () => {
               <a href='/gunawan'>開発者の秘密基地</a>
             </li>
             <li>
-              <a href='/gunawan?mode=arcade'>ミニゲーム</a>
+              <a href='/rio?mode=arcade'>ミニゲーム</a>
             </li>
           </>
         )}
