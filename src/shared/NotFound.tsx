@@ -11,6 +11,18 @@ const NotFound = () => {
       <p className={styles.description}>
         リンクをたどるか、ホームに戻って別のページをご覧ください。
       </p>
+      <p>
+        <span
+          style={{
+            backgroundColor: '#000',
+            color: '#00ff33',
+            fontFamily:
+              'Hack, HackGen, "Cascadia Code", Consolas, Monaco, monospace',
+          }}
+        >
+          HINT: Are you looking for https:// ... /gunawan ?
+        </span>
+      </p>
       <a className={styles.returnLink} href='/'>
         ホームに戻る
       </a>

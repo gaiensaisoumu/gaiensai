@@ -28,6 +28,8 @@ export const Settings = lazy(() => import('./pages/admin/Settings'));
 export const StudentAccounts = lazy(() => import('./pages/admin/StudentAccounts'));
 export const JuniorAccounts = lazy(() => import('./pages/admin/JuniorAccounts'));
 export const Junior = lazy(() => import('./pages/user/junior/Junior'));
+export const SecretBase = lazy(() => import('./pages/easteregg/SecretBase'));
+export const MiniGame = lazy(() => import('./pages/easteregg/MiniGame'));
 
 
 // re-export the eagerly-loaded routes so callers can treat them uniformly

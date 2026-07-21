@@ -20,6 +20,7 @@ import {
   Info,
   Settings,
   StudentAccounts,
+  SecretBase,
 } from './routes';
 import LineCallback from './features/auth/Line';
 import NotFound from './shared/NotFound';
@@ -61,6 +62,10 @@ const userPageLayout = () => (
         <Route path='/map' component={Map} />
         <Route path='/pamphlet' component={Pamphlet} />
         <Route path='/info' component={Info} />
+        <Route path='/gunawan' component={SecretBase} />
+        <Route path='/gunawanrio' component={SecretBase} />
+        <Route path='/rio' component={SecretBase} />
+        <Route path='/riogunawan' component={SecretBase} />
         <Route path='/auth/line/callback' component={LineCallback} />
         <Route default component={NotFound} />
       </Router>
