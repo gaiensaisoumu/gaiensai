@@ -1,6 +1,7 @@
 import { preload, Home, Students, Performances, Junior, TimeTable, Pamphlet, Info, Map, FAQ } from '../routes';
 
 const GlobalNav = () => {
+  const isSecretBaseUnlocked = localStorage.getItem('secretBaseUnlocked') === 'true';
   return (
     <nav>
       <ul>
@@ -62,6 +63,16 @@ const GlobalNav = () => {
             お問い合わせ
           </a>
         </li>
+        {isSecretBaseUnlocked && (
+          <>
+            <li>
+              <a href='/gunawan'>開発者の秘密基地</a>
+            </li>
+            <li>
+              <a href='/gunawan?mode=arcade'>ミニゲーム</a>
+            </li>
+          </>
+        )}
       </ul>
     </nav>
   );

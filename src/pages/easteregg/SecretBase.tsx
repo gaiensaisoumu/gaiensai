@@ -153,6 +153,7 @@ const SecretBase = () => {
         '------------------------------------------------',
       );
       setIsUnlocked(true);
+      localStorage.setItem('secretBaseUnlocked', 'true');
       setTimeout(() => {
         route(SECRET_GAME_URL);
       }, 2000);

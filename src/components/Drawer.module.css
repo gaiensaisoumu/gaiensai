@@ -56,6 +56,14 @@
   z-index: 990;
 }
 
+.drawerPanel {
+  overflow-y: auto;
+}
+
+.drawerContent {
+  padding-bottom: 3rem;
+}
+
 .drawerContent ul {
   list-style: none;
   padding: 0;
