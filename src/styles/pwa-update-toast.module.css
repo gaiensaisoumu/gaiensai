@@ -53,12 +53,10 @@
 }
 
 .pwaUpdateToastButtonDismiss {
-  background: var(--normal-section-bg-color);
+  background: none;
   color: var(--main-text-color);
-}
-
-.pwaUpdateToastButtonDismiss:hover {
-  background: var(--normal-section-bg-color);
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .pwaUpdateWarningOverlay {

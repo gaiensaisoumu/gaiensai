@@ -120,16 +120,16 @@ export const PWAUpdateToast = ({
         </p>
         <div className={styles.pwaUpdateToastButtons}>
           <button
-            className={`${styles.pwaUpdateToastButton} ${styles.pwaUpdateToastButtonUpdate}`}
-            onClick={handleUpdate}
-          >
-            更新
-          </button>
-          <button
             className={`${styles.pwaUpdateToastButton} ${styles.pwaUpdateToastButtonDismiss}`}
             onClick={handleDismiss}
           >
             あとで
+          </button>
+          <button
+            className={`${styles.pwaUpdateToastButton} ${styles.pwaUpdateToastButtonUpdate}`}
+            onClick={handleUpdate}
+          >
+            更新
           </button>
         </div>
       </div>
