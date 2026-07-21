@@ -94,7 +94,7 @@ const SecretBase = () => {
   const [input, setInput] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { query } = useLocation();
+  const { query, route } = useLocation();
 
   useEffect(() => {
     const linkId = 'hack-font-cdn';
@@ -154,7 +154,7 @@ const SecretBase = () => {
       );
       setIsUnlocked(true);
       setTimeout(() => {
-        window.open(SECRET_GAME_URL, '_blank');
+        route(SECRET_GAME_URL);
       }, 2000);
     } else {
       newLines.push(
