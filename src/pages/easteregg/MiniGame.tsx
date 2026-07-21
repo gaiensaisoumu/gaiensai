@@ -33,7 +33,7 @@ const calculateLevel = (currentScore: number) => {
     scoreLeft -= getLevelThreshold(lvl);
     lvl++;
   }
-  return lvl + 4;
+  return lvl;
 };
 
 // 初期配置用の生成関数（600px基準）
