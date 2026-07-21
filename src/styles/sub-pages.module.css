@@ -34,6 +34,13 @@
   margin: 0 auto;
 }
 
+.poster {
+  display: block;
+  width: 90%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
 /* ボタンの配置調整用 */
 .buttonContainer {
   margin: 20px 0;
