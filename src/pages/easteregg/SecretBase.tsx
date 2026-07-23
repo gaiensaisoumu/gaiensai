@@ -48,7 +48,7 @@ const CREDIT_LOGS = [
   '',
   '[TOKYO METROPOLITAN AOYAMA HIGH SCHOOL TEACHERS]',
   '  Name: anonymous',
-  '  Role: Adviser, (Complainer)',
+  '  Role: Adviser, Accounting, (And Difficult Customer)',
   '',
   '[SPECIAL THANKS]',
   '  - Gemini',

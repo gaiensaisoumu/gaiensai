@@ -3,12 +3,12 @@ import styles from '../../styles/sub-pages.module.css';
 import { useTitle } from '../../hooks/useTitle';
 import { supabase } from '../../lib/supabase';
 import NormalSection from '../../components/ui/NormalSection';
-import { NoIndexMeta } from '../../components/NoIndexMeta';
 
 type LeaderboardItem = {
   id: string;
   player_name: string;
   score: number;
+  created_at?: string;
 };
 
 type Pipe = {
@@ -18,9 +18,9 @@ type Pipe = {
 };
 
 const LIMIT_COUNT = 10;
-const INITIAL_DISTANCE = 350; // 土管同士の間隔
-const PIPE_COUNT = 4; // 画面内に存在させる土管の数
-const GAME_SIZE = 600; // 内部の論理キャンバスサイズ（固定）
+const INITIAL_DISTANCE = 350;
+const PIPE_COUNT = 4;
+const GAME_SIZE = 600;
 
 const getLevelThreshold = (lvl: number) => {
   const thresholds = [10, 8, 6, 5, 4, 3];
@@ -37,7 +37,6 @@ const calculateLevel = (currentScore: number) => {
   return lvl;
 };
 
-// 初期配置用の生成関数（600px基準）
 const generateInitialPipes = (): Pipe[] => {
   return Array.from({ length: PIPE_COUNT }).map((_, i) => ({
     id: i,
@@ -53,11 +52,8 @@ export const MiniGame = () => {
   );
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-
-  // 画面サイズに応じたスケール比率
   const [scaleRatio, setScaleRatio] = useState(1);
 
-  // 土管管理（初期状態は3本）
   const pipesRef = useRef<Pipe[]>(generateInitialPipes());
   const [renderPipes, setRenderPipes] = useState<Pipe[]>(
     generateInitialPipes(),
@@ -65,8 +61,10 @@ export const MiniGame = () => {
 
   const [playerName, setPlayerName] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
+  const [fullLeaderboard, setFullLeaderboard] = useState<LeaderboardItem[]>([]); // 追加: 下部用100件
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userRank, setUserRank] = useState<number | null>(null); // 自分の順位
 
   const [renderPos, setRenderPos] = useState({ birdY: 250, velocity: 0 });
   const birdYRef = useRef(250);
@@ -90,7 +88,6 @@ export const MiniGame = () => {
     gapSizeRef.current = gapSize;
   }, [pipeSpeed, gapSize]);
 
-  // ウィンドウリサイズ時のスケール計算
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -111,7 +108,7 @@ export const MiniGame = () => {
   const fetchLeaderboard = async () => {
     const { data, error } = await supabase
       .from('flappy_leaderboard')
-      .select('id, player_name, score')
+      .select('id, player_name, score, created_at')
       .order('score', { ascending: false })
       .order('created_at', { ascending: true })
       .limit(LIMIT_COUNT);
@@ -120,23 +117,56 @@ export const MiniGame = () => {
     }
   };
 
+  const fetchFullLeaderboard = async () => {
+    const { data, error } = await supabase
+      .from('flappy_leaderboard')
+      .select('id, player_name, score, created_at')
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (!error && data) {
+      setFullLeaderboard(data);
+    }
+  };
+
   useEffect(() => {
     fetchLeaderboard();
+    fetchFullLeaderboard();
   }, []);
 
+  // 登録処理および自分の順位算出
   const handleSubmitScore = async (e: Event) => {
     e.preventDefault();
     if (!playerName.trim() || isSubmitting) {
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase
+
+    // インサート時に作成されたレコード（ID等）を取得
+    const { data, error } = await supabase
       .from('flappy_leaderboard')
-      .insert([{ player_name: playerName.trim().slice(0, 10), score }]);
+      .insert([{ player_name: playerName.trim().slice(0, 10), score }])
+      .select();
+
     setIsSubmitting(false);
-    if (!error) {
+
+    if (!error && data && data.length > 0) {
       setIsSubmitted(true);
+
+      // 全体のうち「自分より高いスコア」または「同スコアで自分より前に登録された」件数をカウントして順位を算出
+      const { data: rankData, error: rankError } = await supabase.rpc(
+        'get_user_rank',
+        {
+          target_id: data[0].id,
+        },
+      );
+
+      if (!rankError && rankData && rankData.length > 0) {
+        setUserRank(Number(rankData[0].player_rank));
+      }
+
       fetchLeaderboard();
+      fetchFullLeaderboard();
     }
   };
 
@@ -148,6 +178,7 @@ export const MiniGame = () => {
     setRenderPos({ birdY: 200, velocity: BASE_JUMP });
     setScore(0);
     setIsSubmitted(false);
+    setUserRank(null); // 順位の初期化
     setGameState('playing');
   }, [BASE_JUMP]);
 
@@ -195,7 +226,6 @@ export const MiniGame = () => {
           const maxRightX = Math.max(...pipesRef.current.map((p) => p.x));
           newX = maxRightX + currentDistance;
 
-          // 固定サイズ（600px）基準での高さ計算
           const playableHeight = GAME_SIZE - gapSizeRef.current - 100;
           newGapY = Math.floor(Math.random() * playableHeight) + 50;
 
@@ -215,13 +245,12 @@ export const MiniGame = () => {
       const birdLeft = 80;
       const birdTop = birdYRef.current;
       const birdBottom = birdYRef.current + 32;
-
-      // 地面も600px基準で固定
       const groundY = GAME_SIZE - 24;
 
       if (birdTop <= 0 || birdBottom >= groundY) {
         setGameState('gameover');
         fetchLeaderboard();
+        fetchFullLeaderboard();
         return;
       }
 
@@ -233,6 +262,7 @@ export const MiniGame = () => {
           ) {
             setGameState('gameover');
             fetchLeaderboard();
+            fetchFullLeaderboard();
             return;
           }
         }
@@ -252,7 +282,6 @@ export const MiniGame = () => {
 
   return (
     <>
-    <NoIndexMeta />
       <h1 className={styles.pageTitle}>ミニゲーム</h1>
       <div
         onClick={handleContainerClick}
@@ -383,7 +412,7 @@ export const MiniGame = () => {
           )}
         </div>
 
-        {/* === UIレイヤー（START / GAME OVER） === */}
+        {/* === UIレイヤー === */}
         {gameState !== 'playing' && (
           <div
             style={{
@@ -391,7 +420,7 @@ export const MiniGame = () => {
               inset: '0',
               backgroundColor: 'rgba(0, 0, 0, 0.75)',
               zIndex: 20,
-              overflowY: 'auto', // オーバーレイ全体をスクロール可能に変更
+              overflowY: 'auto',
             }}
           >
             <div
@@ -400,7 +429,7 @@ export const MiniGame = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: '100%', // 画面高に満たない場合は中央揃え
+                minHeight: '100%',
                 padding: '20px',
                 boxSizing: 'border-box',
                 color: '#fff',
@@ -449,61 +478,94 @@ export const MiniGame = () => {
                   <p style={{ margin: '0 0 12px 0', fontSize: '18px' }}>
                     SCORE: {score} (BEST: {highScore})
                   </p>
+
+                  {/* --- 登録フォーム ＆ 順位表示エリア --- */}
                   {!isSubmitted ? (
-                    <form
-                      onSubmit={handleSubmitScore}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        display: 'flex',
-                        gap: '6px',
-                        marginBottom: '16px',
-                      }}
-                    >
-                      <input
-                        type='text'
-                        placeholder='名前 (10文字以内)'
-                        value={playerName}
-                        onInput={(e) =>
-                          setPlayerName((e.target as HTMLInputElement).value)
-                        }
-                        maxLength={10}
+                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                      <form
+                        onSubmit={handleSubmitScore}
+                        onClick={(e) => e.stopPropagation()}
                         style={{
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid #444',
-                          backgroundColor: '#222',
-                          color: '#fff',
-                          fontSize: '13px',
-                        }}
-                      />
-                      <button
-                        type='submit'
-                        disabled={isSubmitting || !playerName.trim()}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#3182ce',
-                          border: 'none',
-                          color: '#fff',
-                          fontWeight: 'bold',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '13px',
+                          display: 'flex',
+                          gap: '6px',
+                          marginBottom: '6px',
                         }}
                       >
-                        登録
-                      </button>
-                    </form>
+                        <input
+                          type='text'
+                          placeholder='名前 (10文字以内)'
+                          value={playerName}
+                          onInput={(e) =>
+                            setPlayerName((e.target as HTMLInputElement).value)
+                          }
+                          maxLength={10}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #444',
+                            backgroundColor: '#222',
+                            color: '#fff',
+                            fontSize: '13px',
+                          }}
+                        />
+                        <button
+                          type='submit'
+                          disabled={isSubmitting || !playerName.trim()}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#3182ce',
+                            border: 'none',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                          }}
+                        >
+                          登録
+                        </button>
+                      </form>
+                      <p style={{ color: '#aaa', fontSize: '11px', margin: 0 }}>
+                        登録するとあなたの全体順位が表示されます
+                      </p>
+                    </div>
                   ) : (
-                    <p
+                    <div
                       style={{
-                        color: '#48bb78',
-                        fontSize: '13px',
+                        backgroundColor: 'rgba(72, 187, 120, 0.2)',
+                        border: '1px solid #48bb78',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
                         margin: '0 0 16px 0',
+                        textAlign: 'center',
                       }}
                     >
-                      登録しました！
-                    </p>
+                      <p
+                        style={{
+                          color: '#48bb78',
+                          fontSize: '12px',
+                          margin: '0 0 2px 0',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        登録完了！
+                      </p>
+                      {userRank !== null && (
+                        <p
+                          style={{
+                            color: '#ffe600',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            margin: 0,
+                          }}
+                        >
+                          現在の順位: 第 {userRank} 位
+                        </p>
+                      )}
+                    </div>
                   )}
+
+                  {/* --- リーダーボード --- */}
                   <div
                     style={{
                       width: '100%',
@@ -513,7 +575,7 @@ export const MiniGame = () => {
                       padding: '10px 14px',
                       marginBottom: '16px',
                       fontSize: '13px',
-                      maxHeight: '150px', // ランキングが長すぎる場合は内部スクロール
+                      maxHeight: '150px',
                       overflowY: 'auto',
                     }}
                   >
@@ -550,6 +612,7 @@ export const MiniGame = () => {
                       ))
                     )}
                   </div>
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -574,6 +637,7 @@ export const MiniGame = () => {
           </div>
         )}
       </div>
+
       <div style={{ margin: '20px auto', maxWidth: '600px' }}>
         <NormalSection>
           <h2>遊び方</h2>
@@ -583,10 +647,10 @@ export const MiniGame = () => {
         </NormalSection>
         <NormalSection>
           <h2>🏆 リーダーボード</h2>
-          {leaderboard.length === 0 ? (
+          {fullLeaderboard.length === 0 ? (
             <div style={{ color: '#aaa' }}>データなし</div>
           ) : (
-            leaderboard.map((item, idx) => (
+            fullLeaderboard.map((item, idx) => (
               <div
                 key={item.id}
                 style={{
