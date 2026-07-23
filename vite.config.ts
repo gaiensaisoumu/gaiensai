@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
+import { sitemapPlugin } from './vite-plugin-sitemap';
 
 type ParsedConfig = Record<string, string | number | boolean | string[]>;
 
@@ -117,13 +118,17 @@ const pwaManifestDisplay = pwaDisplayOptions.includes(
 export default defineConfig({
   plugins: [
     preact(),
+    sitemapPlugin(),
     VitePWA({
       registerType: 'prompt',
+      base: '/',
       includeAssets: pwaIncludeAssets,
       manifest: {
         name: pwaManifestName,
         short_name: pwaManifestShortName,
         description: pwaManifestDescription,
+        start_url: '/',
+        scope: '/',
         theme_color: pwaManifestThemeColor,
         background_color: pwaManifestBackgroundColor,
         display: pwaManifestDisplay,

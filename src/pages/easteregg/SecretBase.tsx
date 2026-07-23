@@ -4,6 +4,7 @@ import styles from '../../styles/sub-pages.module.css';
 import Alert from '../../components/ui/Alert';
 import { useLocation } from 'preact-iso';
 import { MiniGame } from '../../routes';
+import { NoIndexMeta } from '../../components/NoIndexMeta';
 
 // ターミナルに流すクレジットテキスト（ここを好きに書き換えてね！）
 const CREDIT_LOGS = [
@@ -170,6 +171,7 @@ const SecretBase = () => {
 
   return (
     <>
+      <NoIndexMeta />
       <h1 className={styles.pageTitle}>開発者の秘密基地</h1>
 
       <Alert type='info'>

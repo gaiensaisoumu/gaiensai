@@ -3,6 +3,7 @@ import styles from '../../styles/sub-pages.module.css';
 import { useTitle } from '../../hooks/useTitle';
 import { supabase } from '../../lib/supabase';
 import NormalSection from '../../components/ui/NormalSection';
+import { NoIndexMeta } from '../../components/NoIndexMeta';
 
 type LeaderboardItem = {
   id: string;
@@ -251,6 +252,7 @@ export const MiniGame = () => {
 
   return (
     <>
+    <NoIndexMeta />
       <h1 className={styles.pageTitle}>ミニゲーム</h1>
       <div
         onClick={handleContainerClick}

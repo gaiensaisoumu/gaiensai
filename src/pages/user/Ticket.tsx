@@ -21,6 +21,7 @@ import {
 } from '../../features/tickets/ticketCodeDecode.ts';
 import { formatTicketTypeLabel } from '../../features/tickets/formatTicketTypeLabel.ts';
 import { resolveJuniorRelationshipName } from '../../features/tickets/juniorRelationship.ts';
+import { NoIndexMeta } from '../../components/NoIndexMeta.tsx';
 
 import pageStyles from '../../styles/sub-pages.module.css';
 import styles from './Ticket.module.css';
@@ -285,6 +286,7 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
   const [warningMessages, setWarningMessages] = useState<string[]>([]);
   const [ticketStatus, setTicketStatus] = useState<TicketStatus>('unknown');
   const [cacheVersion, setCacheVersion] = useState(0);
+  const [qrSize, setQrSize] = useState(350);
 
   // 中学生チケットかどうかを判定（affiliationが100000超なら中学生）
   const isJuniorTicket = useMemo(() => {
@@ -310,6 +312,19 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
       // Ignore errors in saving to localStorage
     }
   }, [sortMode]);
+
+  useEffect(() => {
+    // ブラウザ環境でマウントされた後に実際のウィンドウ幅から計算
+    const updateSize = () => {
+      setQrSize(Math.min(window.innerWidth * 0.8, 350));
+    };
+
+    updateSize();
+
+    // 画面リサイズ時にも追従させたい場合はイベントリスナーを追加（任意）
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   const token = props.id;
 
@@ -1056,397 +1071,402 @@ const Ticket = (props: RoutePropsForPath<'/t/:id'>) => {
   const eventLabel = `${config.name}${config.year}`;
 
   return (
-    <div className={styles.printRoot}>
-      <div className={styles.printHeader}>
-        <img src={iconUrl} alt='校章' />
-        <span>{eventLabel}</span>
-      </div>
-      <h1 className={pageStyles.pageTitle}>入場チケット</h1>
-      <Alert type='warning' className={styles.noPrint}>
-        <ul>
-          <li>
-            必ず<strong>スクリーンショット</strong>で保存してください。
-          </li>
-          <li>
-            このQRコードは<strong>校内入場</strong>にも使用可能です。
-          </li>
-        </ul>
-      </Alert>
-      <p className={styles.printNotice}>
-        このQRコードは校内入場にも使用可能です。
-      </p>
-      {warningMessages.length > 0 && (
-        <Alert type='error' className={styles.noPrint}>
-          {warningMessages.length === 1 ? (
-            <p>{warningMessages[0]}</p>
-          ) : (
-            <ul>
-              {warningMessages.map((message) => (
-                <li key={message}>{message}</li>
-              ))}
-            </ul>
-          )}
+    <>
+      <NoIndexMeta />
+      <div className={styles.printRoot}>
+        <div className={styles.printHeader}>
+          <img src={iconUrl} alt='校章' />
+          <span>{eventLabel}</span>
+        </div>
+        <h1 className={pageStyles.pageTitle}>入場チケット</h1>
+        <Alert type='warning' className={styles.noPrint}>
+          <ul>
+            <li>
+              必ず<strong>スクリーンショット</strong>で保存してください。
+            </li>
+            <li>
+              このQRコードは<strong>校内入場</strong>にも使用可能です。
+            </li>
+          </ul>
         </Alert>
-      )}
-      {loading && <LoadingSpinner />}
-      <div className={styles.ticketContainer}>
-        <span className={styles.serialBadge}>#{ticket.serial}</span>
-        <h2 className={styles.ticketHeader}>
-          <span className={styles.performanceName}>
-            {ticket.performanceName}
-          </span>
-          {ticket.scheduleName && (
-            <span className={styles.performanceRound}>
-              {ticket.scheduleName}
-            </span>
-          )}
-        </h2>
-        {ticket.performanceTitle && (
-          <p className={styles.performanceTitle}>
-            「{ticket.performanceTitle}」
-          </p>
-        )}
-        {errorMessages.length > 0 && (
+        <p className={styles.printNotice}>
+          このQRコードは校内入場にも使用可能です。
+        </p>
+        {warningMessages.length > 0 && (
           <Alert type='error' className={styles.noPrint}>
-            {errorMessages.length === 1 ? (
-              <p>{errorMessages[0]}</p>
+            {warningMessages.length === 1 ? (
+              <p>{warningMessages[0]}</p>
             ) : (
               <ul>
-                {errorMessages.map((message) => (
+                {warningMessages.map((message) => (
                   <li key={message}>{message}</li>
                 ))}
               </ul>
             )}
           </Alert>
         )}
-
-        {ticketStatus !== 'cancelled' && (
-          <div className={styles.qrSection}>
-            <QRCode
-              value={token}
-              size={Math.min(window.innerWidth * 0.8, 350)}
-              color={qrColor}
-              className={
-                ticket.relationshipId !== 4 &&
-                ticket.performanceId > 0 &&
-                ticket.scheduleId === 0
-                  ? styles.gymTicketQr
-                  : undefined
-              }
-            />
-            <p className={styles.ticketCode}>
-              {code.replace(/.{4}/g, '$&-').replace(/-$/, '')}
+        {loading && <LoadingSpinner />}
+        <div className={styles.ticketContainer}>
+          <span className={styles.serialBadge}>#{ticket.serial}</span>
+          <h2 className={styles.ticketHeader}>
+            <span className={styles.performanceName}>
+              {ticket.performanceName}
+            </span>
+            {ticket.scheduleName && (
+              <span className={styles.performanceRound}>
+                {ticket.scheduleName}
+              </span>
+            )}
+          </h2>
+          {ticket.performanceTitle && (
+            <p className={styles.performanceTitle}>
+              「{ticket.performanceTitle}」
             </p>
-          </div>
-        )}
+          )}
+          {errorMessages.length > 0 && (
+            <Alert type='error' className={styles.noPrint}>
+              {errorMessages.length === 1 ? (
+                <p>{errorMessages[0]}</p>
+              ) : (
+                <ul>
+                  {errorMessages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              )}
+            </Alert>
+          )}
 
-        {ticketStatus !== 'cancelled' && (
-          <p className={styles.printUrlContainer}>
-            <a href={`/t/${token}`}>{ticketUrl}</a>
-          </p>
-        )}
+          {ticketStatus !== 'cancelled' && (
+            <div className={styles.qrSection}>
+              <QRCode
+                value={token}
+                size={qrSize}
+                color={qrColor}
+                className={
+                  ticket.relationshipId !== 4 &&
+                  ticket.performanceId > 0 &&
+                  ticket.scheduleId === 0
+                    ? styles.gymTicketQr
+                    : undefined
+                }
+              />
+              <p className={styles.ticketCode}>
+                {code.replace(/.{4}/g, '$&-').replace(/-$/, '')}
+              </p>
+            </div>
+          )}
 
-        <div className={styles.detailsWrapper}>
-          <div className={styles.ticketDetails}>
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>日時</span>
-              <span className={styles.detailValue}>
-                {ticket.scheduleDate}
-                {ticket.scheduleTime && ticket.scheduleEndTime && (
-                  <>
-                    <br />
-                    {ticket.scheduleTime} - {ticket.scheduleEndTime}
-                  </>
-                )}
-              </span>
-            </div>
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>券種</span>
-              <span className={styles.detailValue}>
-                {ticket.ticketTypeLabel}
-              </span>
-            </div>
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>発行者</span>
-              <span className={styles.detailValue}>
-                {ticket.affiliation === '1600'
-                  ? '当日券ゲスト'
-                  : Number(ticket.affiliation) > 100000
-                    ? '中学生 ' + ticket.affiliation
-                    : Math.floor(Number(ticket.affiliation) / 10000) +
-                      '-' +
-                      Math.floor((Number(ticket.affiliation) % 10000) / 100) +
-                      ' ' +
-                      (Number(ticket.affiliation) % 100)}
-              </span>
-            </div>
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>間柄</span>
-              <span className={styles.detailValue}>
-                {ticket.relationshipName}
-              </span>
-            </div>
-          </div>
-          <div className={styles.ticketPageQrSection}>
-            <p className={styles.ticketPageQrCaption}>チケットページはこちら</p>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <QRCode value={ticketUrl} size={120} />
-            </div>
-          </div>
-        </div>
-
-        {ticketStatus !== 'cancelled' && (
-          <div className={styles.actionSection}>
-            <p className={` ${styles.urlContainer} ${styles.noPrint}`}>
+          {ticketStatus !== 'cancelled' && (
+            <p className={styles.printUrlContainer}>
               <a href={`/t/${token}`}>{ticketUrl}</a>
             </p>
-            <div className={`${styles.actionButtons} ${styles.noPrint}`}>
-              <button
-                className={styles.copyButton}
-                onClick={async () => {
-                  await navigator.clipboard.writeText(ticketUrl);
-                  setShowCopySucceed(true);
-                  setTimeout(() => {
-                    setShowCopySucceed(false);
-                  }, 2000);
+          )}
+
+          <div className={styles.detailsWrapper}>
+            <div className={styles.ticketDetails}>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>日時</span>
+                <span className={styles.detailValue}>
+                  {ticket.scheduleDate}
+                  {ticket.scheduleTime && ticket.scheduleEndTime && (
+                    <>
+                      <br />
+                      {ticket.scheduleTime} - {ticket.scheduleEndTime}
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>券種</span>
+                <span className={styles.detailValue}>
+                  {ticket.ticketTypeLabel}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>発行者</span>
+                <span className={styles.detailValue}>
+                  {ticket.affiliation === '1600'
+                    ? '当日券ゲスト'
+                    : Number(ticket.affiliation) > 100000
+                      ? '中学生 ' + ticket.affiliation
+                      : Math.floor(Number(ticket.affiliation) / 10000) +
+                        '-' +
+                        Math.floor((Number(ticket.affiliation) % 10000) / 100) +
+                        ' ' +
+                        (Number(ticket.affiliation) % 100)}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>間柄</span>
+                <span className={styles.detailValue}>
+                  {ticket.relationshipName}
+                </span>
+              </div>
+            </div>
+            <div className={styles.ticketPageQrSection}>
+              <p className={styles.ticketPageQrCaption}>
+                チケットページはこちら
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <QRCode value={ticketUrl} size={120} />
+              </div>
+            </div>
+          </div>
+
+          {ticketStatus !== 'cancelled' && (
+            <div className={styles.actionSection}>
+              <p className={` ${styles.urlContainer} ${styles.noPrint}`}>
+                <a href={`/t/${token}`}>{ticketUrl}</a>
+              </p>
+              <div className={`${styles.actionButtons} ${styles.noPrint}`}>
+                <button
+                  className={styles.copyButton}
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(ticketUrl);
+                    setShowCopySucceed(true);
+                    setTimeout(() => {
+                      setShowCopySucceed(false);
+                    }, 2000);
+                  }}
+                >
+                  チケットURLをコピー
+                </button>
+                <button
+                  className={styles.shortenButton}
+                  onClick={handleIssueShortUrl}
+                  disabled={isIssuingShortUrl}
+                >
+                  {isIssuingShortUrl ? '短縮URLを発行中...' : '短縮URLを発行'}
+                </button>
+              </div>
+              <p
+                className={`${styles.copySucceed} ${styles.noPrint}`}
+                style={{
+                  opacity: showCopySucceed ? 1 : 0,
+                  display: showCopySucceed ? 'block' : 'none',
                 }}
               >
-                チケットURLをコピー
-              </button>
+                コピーしました
+              </p>
               <button
-                className={styles.shortenButton}
-                onClick={handleIssueShortUrl}
-                disabled={isIssuingShortUrl}
+                className={`${styles.cancelButton} ${styles.noPrint}`}
+                disabled={!canCancelTicket}
+                onClick={handleCancelTicket}
               >
-                {isIssuingShortUrl ? '短縮URLを発行中...' : '短縮URLを発行'}
+                <MdClose />
+                {cancelLoading ? 'キャンセル中...' : 'チケットをキャンセル'}
               </button>
+              <div className={styles.noPrint}>
+                <button
+                  type='button'
+                  className={styles.printButton}
+                  onClick={() => window.print()}
+                >
+                  このチケットを印刷
+                </button>
+              </div>
             </div>
-            <p
-              className={`${styles.copySucceed} ${styles.noPrint}`}
-              style={{
-                opacity: showCopySucceed ? 1 : 0,
-                display: showCopySucceed ? 'block' : 'none',
-              }}
+          )}
+        </div>
+
+        {isShortUrlModalOpen && (
+          <div
+            className={`${styles.shortUrlModalOverlay} ${styles.noPrint}`}
+            role='presentation'
+            onClick={() => setIsShortUrlModalOpen(false)}
+          >
+            <div
+              className={styles.shortUrlModal}
+              role='dialog'
+              aria-modal='true'
+              aria-labelledby='short-url-modal-title'
+              onClick={(event) => event.stopPropagation()}
             >
-              コピーしました
-            </p>
-            <button
-              className={`${styles.cancelButton} ${styles.noPrint}`}
-              disabled={!canCancelTicket}
-              onClick={handleCancelTicket}
-            >
-              <MdClose />
-              {cancelLoading ? 'キャンセル中...' : 'チケットをキャンセル'}
-            </button>
-            <div className={styles.noPrint}>
-              <button
-                type='button'
-                className={styles.printButton}
-                onClick={() => window.print()}
+              <h2
+                id='short-url-modal-title'
+                className={styles.shortUrlModalTitle}
               >
-                このチケットを印刷
-              </button>
+                短縮URLを発行しました
+              </h2>
+              <Alert className={styles.shortUrlWarn}>
+                短縮URLは手入力が必要な場面以外で使わないでください。
+              </Alert>
+              <p className={styles.shortUrlModalDescription}>
+                短縮URLはオフライン時に使用不能になります。URLを共有する場合は、短縮URLよりもQRコードのスクリーンショットを共有することをおすすめします。
+              </p>
+              <p className={styles.shortUrlValue}>{issuedShortUrl}</p>
+              <div className={styles.shortUrlModalActions}>
+                <button
+                  type='button'
+                  className={styles.copyButton}
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(issuedShortUrl);
+                    setShowShortUrlCopySucceed(true);
+                    setTimeout(() => setShowShortUrlCopySucceed(false), 2000);
+                  }}
+                >
+                  短縮URLをコピー
+                </button>
+                <button
+                  type='button'
+                  className={styles.modalCloseButton}
+                  onClick={() => setIsShortUrlModalOpen(false)}
+                >
+                  閉じる
+                </button>
+              </div>
+              <p
+                className={styles.copySucceed}
+                style={{ opacity: showShortUrlCopySucceed ? 1 : 0 }}
+              >
+                コピーしました
+              </p>
             </div>
           </div>
         )}
-      </div>
 
-      {isShortUrlModalOpen && (
-        <div
-          className={`${styles.shortUrlModalOverlay} ${styles.noPrint}`}
-          role='presentation'
-          onClick={() => setIsShortUrlModalOpen(false)}
-        >
-          <div
-            className={styles.shortUrlModal}
-            role='dialog'
-            aria-modal='true'
-            aria-labelledby='short-url-modal-title'
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2
-              id='short-url-modal-title'
-              className={styles.shortUrlModalTitle}
-            >
-              短縮URLを発行しました
-            </h2>
-            <Alert className={styles.shortUrlWarn}>
-              短縮URLは手入力が必要な場面以外で使わないでください。
-            </Alert>
-            <p className={styles.shortUrlModalDescription}>
-              短縮URLはオフライン時に使用不能になります。URLを共有する場合は、短縮URLよりもQRコードのスクリーンショットを共有することをおすすめします。
-            </p>
-            <p className={styles.shortUrlValue}>{issuedShortUrl}</p>
-            <div className={styles.shortUrlModalActions}>
+        <section className={styles.noPrint}>
+          <h3>注意事項</h3>
+          <ul className={styles.notes}>
+            <li>
+              このQRコードをスクリーンショットで保存し、当日読み取り端末にかざしてご入場ください。
+            </li>
+            <li>
+              他の人に共有する場合は、QRコードのスクリーンショットまたはURLを送信してください。
+            </li>
+            <li>この券で、校内入場や展示部活を見ることも可能です。</li>
+            <li>
+              このQRコード1枚につき、一人まで入場可能です。ただし、他の座席を使用しない場合は乳児と同伴可能です。
+            </li>
+            <li>
+              このQRコードは<strong>1度のみ</strong>
+              使用可能です。再入場はできません。
+            </li>
+            <li>
+              このページで発券されたチケットは、外苑祭当日、入場時に必要となります。忘れずに持参してください。
+            </li>
+            <li>
+              <strong>
+                URLやこの画面は、絶対に不特定多数に共有してはいけません。
+              </strong>
+            </li>
+          </ul>
+        </section>
+
+        {(!isDayTicket || isJuniorTicket) && (
+          <section className={styles.noPrint}>
+            <h3>間柄の変更</h3>
+            <div className={styles.relationshipChangeSection}>
               <button
                 type='button'
-                className={styles.copyButton}
-                onClick={async () => {
-                  await navigator.clipboard.writeText(issuedShortUrl);
-                  setShowShortUrlCopySucceed(true);
-                  setTimeout(() => setShowShortUrlCopySucceed(false), 2000);
+                disabled={!canChangeRelationship}
+                onClick={() => {
+                  setRelationshipError(null);
+                  setSelectedRelationshipId(ticket.relationshipId);
+                  setIsRelationshipModalOpen(true);
                 }}
               >
-                短縮URLをコピー
-              </button>
-              <button
-                type='button'
-                className={styles.modalCloseButton}
-                onClick={() => setIsShortUrlModalOpen(false)}
-              >
-                閉じる
+                間柄を変更する
               </button>
             </div>
-            <p
-              className={styles.copySucceed}
-              style={{ opacity: showShortUrlCopySucceed ? 1 : 0 }}
-            >
-              コピーしました
-            </p>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
 
-      <section className={styles.noPrint}>
-        <h3>注意事項</h3>
-        <ul className={styles.notes}>
-          <li>
-            このQRコードをスクリーンショットで保存し、当日読み取り端末にかざしてご入場ください。
-          </li>
-          <li>
-            他の人に共有する場合は、QRコードのスクリーンショットまたはURLを送信してください。
-          </li>
-          <li>この券で、校内入場や展示部活を見ることも可能です。</li>
-          <li>
-            このQRコード1枚につき、一人まで入場可能です。ただし、他の座席を使用しない場合は乳児と同伴可能です。
-          </li>
-          <li>
-            このQRコードは<strong>1度のみ</strong>
-            使用可能です。再入場はできません。
-          </li>
-          <li>
-            このページで発券されたチケットは、外苑祭当日、入場時に必要となります。忘れずに持参してください。
-          </li>
-          <li>
-            <strong>
-              URLやこの画面は、絶対に不特定多数に共有してはいけません。
-            </strong>
-          </li>
-        </ul>
-      </section>
-
-      {(!isDayTicket || isJuniorTicket) && (
-        <section className={styles.noPrint}>
-          <h3>間柄の変更</h3>
-          <div className={styles.relationshipChangeSection}>
-            <button
-              type='button'
-              disabled={!canChangeRelationship}
-              onClick={() => {
-                setRelationshipError(null);
-                setSelectedRelationshipId(ticket.relationshipId);
-                setIsRelationshipModalOpen(true);
-              }}
-            >
-              間柄を変更する
-            </button>
-          </div>
-        </section>
-      )}
-
-      {(!isDayTicket || isJuniorTicket) && isRelationshipModalOpen && (
-        <div
-          className={`${styles.relationshipModalOverlay} ${styles.noPrint}`}
-          role='presentation'
-          onClick={() => {
-            if (!isChangingRelationship) {
-              setIsRelationshipModalOpen(false);
-            }
-          }}
-        >
+        {(!isDayTicket || isJuniorTicket) && isRelationshipModalOpen && (
           <div
-            className={styles.relationshipModal}
-            role='dialog'
-            aria-modal='true'
-            aria-labelledby='relationship-change-modal-title'
-            onClick={(event) => event.stopPropagation()}
+            className={`${styles.relationshipModalOverlay} ${styles.noPrint}`}
+            role='presentation'
+            onClick={() => {
+              if (!isChangingRelationship) {
+                setIsRelationshipModalOpen(false);
+              }
+            }}
           >
-            <h2
-              id='relationship-change-modal-title'
-              className={styles.relationshipModalTitle}
+            <div
+              className={styles.relationshipModal}
+              role='dialog'
+              aria-modal='true'
+              aria-labelledby='relationship-change-modal-title'
+              onClick={(event) => event.stopPropagation()}
             >
-              間柄を変更する
-            </h2>
-            <p className={styles.relationshipModalMessage}>
-              間柄を変更して再発行します（再発行とキャンセルは一括で処理され、どちらか片方だけ成功することはありません）。続行しますか?
-            </p>
-
-            <label
-              className={styles.relationshipField}
-              htmlFor='relationship-select'
-            >
-              新しい間柄
-              <select
-                id='relationship-select'
-                className={styles.relationshipSelect}
-                value={selectedRelationshipId ?? ''}
-                onChange={(event) =>
-                  setSelectedRelationshipId(Number(event.currentTarget.value))
-                }
-                disabled={relationshipLoading || isChangingRelationship}
+              <h2
+                id='relationship-change-modal-title'
+                className={styles.relationshipModalTitle}
               >
-                <option value='' disabled={true}>
-                  選択してください
-                </option>
-                {relationships.map((relationship) => (
-                  <option key={relationship.id} value={relationship.id}>
-                    {relationship.name}
+                間柄を変更する
+              </h2>
+              <p className={styles.relationshipModalMessage}>
+                間柄を変更して再発行します（再発行とキャンセルは一括で処理され、どちらか片方だけ成功することはありません）。続行しますか?
+              </p>
+
+              <label
+                className={styles.relationshipField}
+                htmlFor='relationship-select'
+              >
+                新しい間柄
+                <select
+                  id='relationship-select'
+                  className={styles.relationshipSelect}
+                  value={selectedRelationshipId ?? ''}
+                  onChange={(event) =>
+                    setSelectedRelationshipId(Number(event.currentTarget.value))
+                  }
+                  disabled={relationshipLoading || isChangingRelationship}
+                >
+                  <option value='' disabled={true}>
+                    選択してください
                   </option>
-                ))}
-              </select>
-            </label>
+                  {relationships.map((relationship) => (
+                    <option key={relationship.id} value={relationship.id}>
+                      {relationship.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            {relationshipLoading && (
-              <LoadingSpinner message='間柄を読み込み中...' />
-            )}
-            {relationshipError && (
-              <p className={styles.relationshipError}>{relationshipError}</p>
-            )}
+              {relationshipLoading && (
+                <LoadingSpinner message='間柄を読み込み中...' />
+              )}
+              {relationshipError && (
+                <p className={styles.relationshipError}>{relationshipError}</p>
+              )}
 
-            <div className={styles.relationshipModalActions}>
-              <button
-                type='button'
-                className={styles.modalCloseButton}
-                onClick={() => setIsRelationshipModalOpen(false)}
-                disabled={isChangingRelationship}
-              >
-                キャンセル
-              </button>
-              <button
-                type='button'
-                className={styles.changeRelationshipConfirmButton}
-                onClick={handleChangeRelationship}
-                disabled={relationshipLoading || isChangingRelationship}
-              >
-                {isChangingRelationship ? '変更中...' : '続行する'}
-              </button>
+              <div className={styles.relationshipModalActions}>
+                <button
+                  type='button'
+                  className={styles.modalCloseButton}
+                  onClick={() => setIsRelationshipModalOpen(false)}
+                  disabled={isChangingRelationship}
+                >
+                  キャンセル
+                </button>
+                <button
+                  type='button'
+                  className={styles.changeRelationshipConfirmButton}
+                  onClick={handleChangeRelationship}
+                  disabled={relationshipLoading || isChangingRelationship}
+                >
+                  {isChangingRelationship ? '変更中...' : '続行する'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <section className={styles.noPrint}>
-        <h3>他のチケット</h3>
-        <TicketListContent
-          embedded={false}
-          tickets={tickets}
-          showSortControl
-          sortMode={sortMode}
-          onSortModeChange={setSortMode}
-          emptyMessage='この端末で表示したことのあるチケットはまだありません。'
-        />
-      </section>
-    </div>
+        <section className={styles.noPrint}>
+          <h3>他のチケット</h3>
+          <TicketListContent
+            embedded={false}
+            tickets={tickets}
+            showSortControl
+            sortMode={sortMode}
+            onSortModeChange={setSortMode}
+            emptyMessage='この端末で表示したことのあるチケットはまだありません。'
+          />
+        </section>
+      </div>
+    </>
   );
 };
 

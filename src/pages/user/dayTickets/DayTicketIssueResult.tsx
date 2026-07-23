@@ -10,6 +10,7 @@ import styles from '../students/Issue.module.css';
 import BackButton from '../../../components/ui/BackButton';
 import { useTicketStorage } from '../../../features/tickets/useTicketStorage';
 import { useTitle } from '../../../hooks/useTitle';
+import { NoIndexMeta } from '../../../components/NoIndexMeta';
 
 const DayTicketIssueResult = () => {
   const [result, setResult] = useState<IssueResultPayload | null>(null);
@@ -62,41 +63,44 @@ const DayTicketIssueResult = () => {
   const issuedTickets = useDecodedSerialTickets(result?.issuedTickets ?? []);
 
   return (
-    <div className={styles.issuePage}>
-      <BackButton href='/day-tickets' />
-      <h1 className={styles.pageTitle}>当日券発券完了</h1>
+    <>
+      <NoIndexMeta />
+      <div className={styles.issuePage}>
+        <BackButton href='/day-tickets' />
+        <h1 className={styles.pageTitle}>当日券発券完了</h1>
 
-      {!result ? (
-        <section className={styles.issuedSection}>
-          <p>表示できる発券結果がありません。</p>
-          <a href='/day-tickets' className={styles.topBackButton}>
-            当日券発券画面へ戻る
-          </a>
-        </section>
-      ) : (
-        <section className={styles.issuedSection}>
-          <IssuedTicketCardList
-            title='発券したチケット一覧'
-            showSortControl
-            showSerialNumber
-            showTicketCode
-            tickets={issuedTickets.map((ticket) => ({
-              ...ticket,
-              performanceName: result.performanceName,
-              performanceTitle: result.performanceTitle,
-              scheduleName: result.scheduleName,
-              ticketTypeLabel: result.ticketTypeLabel,
-              relationshipName: result.relationshipName,
-              status: 'valid',
-            }))}
-          />
-        </section>
-      )}
+        {!result ? (
+          <section className={styles.issuedSection}>
+            <p>表示できる発券結果がありません。</p>
+            <a href='/day-tickets' className={styles.topBackButton}>
+              当日券発券画面へ戻る
+            </a>
+          </section>
+        ) : (
+          <section className={styles.issuedSection}>
+            <IssuedTicketCardList
+              title='発券したチケット一覧'
+              showSortControl
+              showSerialNumber
+              showTicketCode
+              tickets={issuedTickets.map((ticket) => ({
+                ...ticket,
+                performanceName: result.performanceName,
+                performanceTitle: result.performanceTitle,
+                scheduleName: result.scheduleName,
+                ticketTypeLabel: result.ticketTypeLabel,
+                relationshipName: result.relationshipName,
+                status: 'valid',
+              }))}
+            />
+          </section>
+        )}
 
-      <a href='/day-tickets' className={styles.buttonLink}>
-        当日券発券画面へ戻る
-      </a>
-    </div>
+        <a href='/day-tickets' className={styles.buttonLink}>
+          当日券発券画面へ戻る
+        </a>
+      </div>
+    </>
   );
 };
 

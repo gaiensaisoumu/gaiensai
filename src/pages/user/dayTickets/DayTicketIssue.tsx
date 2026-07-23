@@ -22,6 +22,7 @@ import { formatTicketTypeLabel } from '../../../features/tickets/formatTicketTyp
 import Alert from '../../../components/ui/Alert';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { useTitle } from '../../../hooks/useTitle';
+import { NoIndexMeta } from '../../../components/NoIndexMeta';
 
 const MAX_ISSUE_COUNT = 5;
 const PANEL_ANIMATION_MS = 360;
@@ -484,155 +485,160 @@ const DayTicketIssue = () => {
   }
 
   return (
-    <div className={styles.issuePage}>
-      <BackButton href='/' />
-      <h1 className={styles.pageTitle}>当日券発券</h1>
-      <p style={{ margin: '0 1rem' }}>
-        {eventDateText
-          ? `${eventDateText} の当日券を発券できます。`
-          : '当日券を発券できます。'}
-      </p>
+    <>
+      <NoIndexMeta />
+      <div className={styles.issuePage}>
+        <BackButton href='/' />
+        <h1 className={styles.pageTitle}>当日券発券</h1>
+        <p style={{ margin: '0 1rem' }}>
+          {eventDateText
+            ? `${eventDateText} の当日券を発券できます。`
+            : '当日券を発券できます。'}
+        </p>
 
-      <div className={styles.sliderViewport}>
-        <div className={getPanelClassName(1)}>
-          <IssueStepTicketType
-            options={activeTicketTypes}
-            selectedTicketTypeId={selectedTicketTypeId}
-            onSelectTicketType={setSelectedTicketTypeId}
-          />
-        </div>
-
-        <div className={getPanelClassName(2)}>
-          <IssueStepPerformance
-            isGymPerformanceTicket={isGymPerformanceTicket}
-            classRemainingMode='total'
-            selectedPerformance={selectedPerformance}
-            selectedCellKey={selectedCellKey}
-            onSelectPerformance={setSelectedPerformance}
-          />
-        </div>
-
-        <div className={getPanelClassName(3)}>
-          <NormalSection>
-            <h2 className={styles.sectionTitle}>3. 発行枚数</h2>
-            <div className={styles.formRow}>
-              <label className={styles.formLabel} htmlFor='day-issue-count'>
-                発行枚数
-              </label>
-              <p style={{ margin: 0, paddingLeft: '1em' }}>
-                この枚数分だけ、1人分のチケットが同時に発券されます。
-              </p>
-              <select
-                id='day-issue-count'
-                className={styles.select}
-                value={String(issueCount)}
-                onChange={(event) =>
-                  setIssueCount(Number(event.currentTarget.value))
-                }
-              >
-                {Array.from(
-                  { length: MAX_ISSUE_COUNT },
-                  (_, index) => index + 1,
-                ).map((count) => (
-                  <option key={count} value={count}>
-                    {count}枚
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <h3 className={styles.previewHeading}>発券内容</h3>
-            <ul className={styles.previewList}>
-              <li>
-                <span>チケットタイプ</span>
-                <strong>{selectedTicketType?.name ?? '-'}</strong>
-              </li>
-              <li>
-                <span>公演のクラス/団体</span>
-                <strong>
-                  {selectedPerformance
-                    ? selectedPerformance.performanceName
-                    : '-'}
-                </strong>
-              </li>
-              <li>
-                <span>公演回</span>
-                <strong>
-                  {selectedPerformance ? selectedPerformance.scheduleName : '-'}
-                </strong>
-              </li>
-              <li>
-                <span>利用者との間柄</span>
-                <strong>{SELF_RELATIONSHIP_NAME}</strong>
-              </li>
-              <li>
-                <span>発行枚数</span>
-                <strong>{issueCount}枚</strong>
-              </li>
-            </ul>
-          </NormalSection>
-        </div>
-
-        <div className={styles.actions}>
-          <div className={styles.progressSection}>
-            <progress
-              className={styles.progressBar}
-              max={3}
-              value={step}
-            ></progress>
-            <p className={styles.stepIndicator}>STEP {step} / 3</p>
+        <div className={styles.sliderViewport}>
+          <div className={getPanelClassName(1)}>
+            <IssueStepTicketType
+              options={activeTicketTypes}
+              selectedTicketTypeId={selectedTicketTypeId}
+              onSelectTicketType={setSelectedTicketTypeId}
+            />
           </div>
 
-          <button
-            type='button'
-            className={styles.backButton}
-            onClick={() => {
-              if (step > 1) {
-                transitionToStep((step - 1) as Step);
-              }
-            }}
-            style={step === 1 ? { visibility: 'hidden' } : undefined}
-          >
-            戻る
-          </button>
+          <div className={getPanelClassName(2)}>
+            <IssueStepPerformance
+              isGymPerformanceTicket={isGymPerformanceTicket}
+              classRemainingMode='total'
+              selectedPerformance={selectedPerformance}
+              selectedCellKey={selectedCellKey}
+              onSelectPerformance={setSelectedPerformance}
+            />
+          </div>
 
-          <div>
+          <div className={getPanelClassName(3)}>
+            <NormalSection>
+              <h2 className={styles.sectionTitle}>3. 発行枚数</h2>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor='day-issue-count'>
+                  発行枚数
+                </label>
+                <p style={{ margin: 0, paddingLeft: '1em' }}>
+                  この枚数分だけ、1人分のチケットが同時に発券されます。
+                </p>
+                <select
+                  id='day-issue-count'
+                  className={styles.select}
+                  value={String(issueCount)}
+                  onChange={(event) =>
+                    setIssueCount(Number(event.currentTarget.value))
+                  }
+                >
+                  {Array.from(
+                    { length: MAX_ISSUE_COUNT },
+                    (_, index) => index + 1,
+                  ).map((count) => (
+                    <option key={count} value={count}>
+                      {count}枚
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <h3 className={styles.previewHeading}>発券内容</h3>
+              <ul className={styles.previewList}>
+                <li>
+                  <span>チケットタイプ</span>
+                  <strong>{selectedTicketType?.name ?? '-'}</strong>
+                </li>
+                <li>
+                  <span>公演のクラス/団体</span>
+                  <strong>
+                    {selectedPerformance
+                      ? selectedPerformance.performanceName
+                      : '-'}
+                  </strong>
+                </li>
+                <li>
+                  <span>公演回</span>
+                  <strong>
+                    {selectedPerformance
+                      ? selectedPerformance.scheduleName
+                      : '-'}
+                  </strong>
+                </li>
+                <li>
+                  <span>利用者との間柄</span>
+                  <strong>{SELF_RELATIONSHIP_NAME}</strong>
+                </li>
+                <li>
+                  <span>発行枚数</span>
+                  <strong>{issueCount}枚</strong>
+                </li>
+              </ul>
+            </NormalSection>
+          </div>
+
+          <div className={styles.actions}>
+            <div className={styles.progressSection}>
+              <progress
+                className={styles.progressBar}
+                max={3}
+                value={step}
+              ></progress>
+              <p className={styles.stepIndicator}>STEP {step} / 3</p>
+            </div>
+
             <button
               type='button'
-              className={styles.nextButton}
+              className={styles.backButton}
               onClick={() => {
-                if (step === 1) {
-                  transitionToStep(2);
-                  return;
-                }
-
-                if (step === 2) {
-                  transitionToStep(3);
+                if (step > 1) {
+                  transitionToStep((step - 1) as Step);
                 }
               }}
-              disabled={
-                (step === 1 &&
-                  (!selectedTicketType || !selectedTicketType.is_active)) ||
-                (step === 2 && !selectedPerformance) ||
-                step === 3
-              }
-              style={step === 3 ? { display: 'none' } : undefined}
+              style={step === 1 ? { visibility: 'hidden' } : undefined}
             >
-              次へ
+              戻る
             </button>
-            <button
-              type='button'
-              className={styles.generateButton}
-              onClick={handleIssue}
-              disabled={!canSubmit || isIssuing || isIssueReceptionStopped}
-              style={step !== 3 ? { display: 'none' } : undefined}
-            >
-              {isIssuing ? '発券中...' : '発券する'}
-            </button>
+
+            <div>
+              <button
+                type='button'
+                className={styles.nextButton}
+                onClick={() => {
+                  if (step === 1) {
+                    transitionToStep(2);
+                    return;
+                  }
+
+                  if (step === 2) {
+                    transitionToStep(3);
+                  }
+                }}
+                disabled={
+                  (step === 1 &&
+                    (!selectedTicketType || !selectedTicketType.is_active)) ||
+                  (step === 2 && !selectedPerformance) ||
+                  step === 3
+                }
+                style={step === 3 ? { display: 'none' } : undefined}
+              >
+                次へ
+              </button>
+              <button
+                type='button'
+                className={styles.generateButton}
+                onClick={handleIssue}
+                disabled={!canSubmit || isIssuing || isIssueReceptionStopped}
+                style={step !== 3 ? { display: 'none' } : undefined}
+              >
+                {isIssuing ? '発券中...' : '発券する'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
