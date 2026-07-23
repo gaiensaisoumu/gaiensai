@@ -22,7 +22,9 @@ import { supabase } from '../../../lib/supabase';
 import { formatTicketTypeLabel } from '../../../features/tickets/formatTicketTypeLabel';
 import { resolveJuniorRelationshipName } from '../../../features/tickets/juniorRelationship';
 import {
+  type JuniorApplicationDays,
   parseJuniorApplicationDaySelection,
+  resolveJuniorApplicationDayError,
   resolveJuniorApplicationDays,
   serializeJuniorApplicationDaySelection,
 } from './applicationDay';
@@ -46,6 +48,8 @@ const JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID = 7;
 const SELF_RELATIONSHIP_ID = 1;
 const ISSUE_POLL_MAX_RETRIES = 20;
 const ISSUE_POLL_INTERVAL_MS = 300;
+const LOAD_TICKET_RETRY_MAX = 20;
+const LOAD_TICKET_RETRY_INTERVAL_MS = 300;
 
 type AccountSplitState = {
   showConfirmation: boolean;
@@ -71,12 +75,10 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
     useState<TicketListSortMode>('recent');
   const [hasReachedJuniorIssueLimit, setHasReachedJuniorIssueLimit] =
     useState(false);
-  const [classApplicationDays, setClassApplicationDays] = useState<Array<
-    'day1' | 'day2'
-  > | null>(null);
-  const [gymApplicationDays, setGymApplicationDays] = useState<Array<
-    'day1' | 'day2'
-  > | null>(null);
+  const [classApplicationDays, setClassApplicationDays] =
+    useState<JuniorApplicationDays | null>(null);
+  const [gymApplicationDays, setGymApplicationDays] =
+    useState<JuniorApplicationDays | null>(null);
   const [accountSplit, setAccountSplit] = useState<AccountSplitState>({
     showConfirmation: false,
     showParentForm: false,
@@ -343,6 +345,10 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
   const localPart = userData.email.replace('@gaiensai.local', '');
   const loginId = localPart.match(/^(.*)-\d{8}$/)?.[1] ?? localPart;
   const usageType = userData.junior_usage_type;
+  const isAdmissionOnlyAccount = userData.application_day === 'admission_only';
+  const hasEntryOnlyTicket = ticketCards.some(
+    (ticket) => ticket.performanceName === '入場専用券',
+  );
   const isIssueReceptionStopped =
     !isTicketIssuingEnabled ||
     !hasAnyActiveInviteTicketType ||
@@ -353,6 +359,13 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
       const { classDay, gymDay } = resolveJuniorApplicationDays(
         window.location.search,
       );
+      const applicationDayError = resolveJuniorApplicationDayError(
+        window.location.search,
+      );
+      if (applicationDayError) {
+        setTicketError(applicationDayError);
+        return;
+      }
       const resolvedClassDays = classDay;
       const resolvedGymDays = gymDay;
 
@@ -552,7 +565,7 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
   }, [usageType]);
 
   useEffect(() => {
-    const loadTickets = async () => {
+  const loadTickets = async () => {
       setTicketLoading(true);
       setTicketError(null);
 
@@ -568,25 +581,43 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
         return;
       }
 
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from('tickets')
-        .select('code, signature, relationship')
-        .eq('user_id', user.id)
-        .eq('status', 'valid')
-        .order('created_at', { ascending: false });
-
-      if (ticketsError) {
-        setTicketError('チケット情報の取得に失敗しました。');
-        setTicketLoading(false);
-        return;
-      }
-
-      setIsOnline(true);
-      const tickets = (ticketsData ?? []) as Array<{
+      let ticketsData: Array<{
         code: string;
         signature: string;
         relationship: number;
-      }>;
+      }> | null = null;
+
+      for (let i = 0; i < LOAD_TICKET_RETRY_MAX; i++) {
+        const { data, error: ticketsError } = await supabase
+          .from('tickets')
+          .select('code, signature, relationship')
+          .eq('user_id', user.id)
+          .eq('status', 'valid')
+          .order('created_at', { ascending: false });
+
+        if (ticketsError) {
+          setTicketError('チケット情報の取得に失敗しました。');
+          setTicketLoading(false);
+          return;
+        }
+
+        ticketsData = (data ?? []) as Array<{
+          code: string;
+          signature: string;
+          relationship: number;
+        }>;
+
+        if (ticketsData.length > 0) {
+          break;
+        }
+
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, LOAD_TICKET_RETRY_INTERVAL_MS);
+        });
+      }
+
+      setIsOnline(true);
+      const tickets = ticketsData ?? [];
 
       if (tickets.length === 0) {
         setTicketCards([]);
@@ -783,20 +814,22 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
                   ? '保護者のみ'
                   : '不明'}
         </h2>
-        <a
-          href='/junior/issue'
-          className={`${dashboardStyles.buttonLink} ${!isOnline || isIssueReceptionStopped ? dashboardStyles.buttonLinkDisabled : ''}`}
-          aria-disabled={!isOnline || isIssueReceptionStopped}
-          tabIndex={!isOnline || isIssueReceptionStopped ? -1 : 0}
-          onClick={(event) => {
-            if (!isOnline || isIssueReceptionStopped) {
-              event.preventDefault();
-            }
-          }}
-        >
-          <IoMdAdd />
-          新規チケット発行
-        </a>
+        {(!isAdmissionOnlyAccount || !hasEntryOnlyTicket) && (
+          <a
+            href='/junior/issue'
+            className={`${dashboardStyles.buttonLink} ${!isOnline || isIssueReceptionStopped ? dashboardStyles.buttonLinkDisabled : ''}`}
+            aria-disabled={!isOnline || isIssueReceptionStopped}
+            tabIndex={!isOnline || isIssueReceptionStopped ? -1 : 0}
+            onClick={(event) => {
+              if (!isOnline || isIssueReceptionStopped) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <IoMdAdd />
+            新規チケット発行
+          </a>
+        )}
         {!isOnline && (
           <p className={dashboardStyles.issueOfflineNote}>
             オフライン中は新規チケットを発行できません。
@@ -832,62 +865,64 @@ const JuniorMyPage = ({ userData }: JuniorMyPageProps) => {
           emptyMessage='自分が使うチケットはまだありません。'
         />
       </NormalSection>
-      <NormalSection>
-        <h2>公演空き状況</h2>
-        <a href='/performances' className={dashboardStyles.smallButtonLink}>
-          公演の詳細はこちら
-        </a>
-        <a href='/timetable' className={dashboardStyles.smallButtonLink}>
-          タイムテーブルはこちら
-        </a>
-        {ticketLoading ? <LoadingSpinner /> : null}
-        {(() => {
-          const showClassPerformances =
-            !gymApplicationDays ||
-            gymApplicationDays.length === 0 ||
-            (classApplicationDays && classApplicationDays.length > 0);
-          const showGymPerformances =
-            !classApplicationDays ||
-            classApplicationDays.length === 0 ||
-            (gymApplicationDays && gymApplicationDays.length > 0);
+      {!isAdmissionOnlyAccount && (
+        <NormalSection>
+          <h2>公演空き状況</h2>
+          <a href='/performances' className={dashboardStyles.smallButtonLink}>
+            公演の詳細はこちら
+          </a>
+          <a href='/timetable' className={dashboardStyles.smallButtonLink}>
+            タイムテーブルはこちら
+          </a>
+          {ticketLoading ? <LoadingSpinner /> : null}
+          {(() => {
+            const showClassPerformances =
+              !gymApplicationDays ||
+              gymApplicationDays.length === 0 ||
+              (classApplicationDays && classApplicationDays.length > 0);
+            const showGymPerformances =
+              !classApplicationDays ||
+              classApplicationDays.length === 0 ||
+              (gymApplicationDays && gymApplicationDays.length > 0);
 
-          return (
-            <>
-              {showClassPerformances ? (
-                <>
-                  <h3>クラス公演</h3>
-                  <PerformancesTable
-                    enableIssueJump={true}
-                    issuePath='/junior/issue'
-                    remainingMode='junior'
-                    filterAccepting={true}
-                    scheduleFilter={
-                      classApplicationDays && classApplicationDays.length > 0
-                        ? classScheduleFilter
-                        : undefined
-                    }
-                  />
-                </>
-              ) : null}
-              {showGymPerformances ? (
-                <>
-                  <h3>体育館公演</h3>
-                  <GymPerformancesTable
-                    enableIssueJump={true}
-                    issuePath='/junior/issue'
-                    filterAccepting={true}
-                    scheduleFilter={
-                      gymApplicationDays && gymApplicationDays.length > 0
-                        ? gymScheduleFilter
-                        : undefined
-                    }
-                  />
-                </>
-              ) : null}
-            </>
-          );
-        })()}
-      </NormalSection>
+            return (
+              <>
+                {showClassPerformances ? (
+                  <>
+                    <h3>クラス公演</h3>
+                    <PerformancesTable
+                      enableIssueJump={true}
+                      issuePath='/junior/issue'
+                      remainingMode='junior'
+                      filterAccepting={true}
+                      scheduleFilter={
+                        classApplicationDays && classApplicationDays.length > 0
+                          ? classScheduleFilter
+                          : undefined
+                      }
+                    />
+                  </>
+                ) : null}
+                {showGymPerformances ? (
+                  <>
+                    <h3>体育館公演</h3>
+                    <GymPerformancesTable
+                      enableIssueJump={true}
+                      issuePath='/junior/issue'
+                      filterAccepting={true}
+                      scheduleFilter={
+                        gymApplicationDays && gymApplicationDays.length > 0
+                          ? gymScheduleFilter
+                          : undefined
+                      }
+                    />
+                  </>
+                ) : null}
+              </>
+            );
+          })()}
+        </NormalSection>
+      )}
 
       {usageType === 0 && (
         <NormalSection>

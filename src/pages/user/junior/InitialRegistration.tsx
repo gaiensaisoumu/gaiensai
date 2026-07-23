@@ -2,9 +2,14 @@ import { useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { supabase } from '../../../lib/supabase';
 import {
+  resolveJuniorApplicationDayError,
   resolveJuniorApplicationDays,
   serializeJuniorApplicationDaySelection,
 } from './applicationDay';
+import {
+  JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID,
+  waitForJuniorEntryOnlyTicketIssued,
+} from './juniorTicketWait';
 import { createClient } from '@supabase/supabase-js';
 import styles from '../students/InitialRegistration.module.css';
 import { useTitle } from '../../../hooks/useTitle';
@@ -17,10 +22,7 @@ type InitialRegistrationProps = {
   onRegistered: (commit?: boolean) => Promise<boolean>;
 };
 
-const JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID = 7;
 const SELF_RELATIONSHIP_ID = 1;
-const ISSUE_POLL_MAX_RETRIES = 20;
-const ISSUE_POLL_INTERVAL_MS = 300;
 
 type AccountSplitState = {
   showConfirmation: boolean;
@@ -195,6 +197,15 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
     event.preventDefault();
     setErrorMessage(null);
 
+    const applicationDayError = resolveJuniorApplicationDayError(
+      window.location.search,
+    );
+    if (applicationDayError) {
+      setErrorMessage(applicationDayError);
+      setLoading(false);
+      return;
+    }
+
     const { classDay, gymDay } = resolveJuniorApplicationDays(
       window.location.search,
     );
@@ -361,39 +372,7 @@ const InitialRegistration = ({ onRegistered }: InitialRegistrationProps) => {
         }
       }
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-
-      if (!userId) {
-        setErrorMessage(
-          '認証情報の取得に失敗しました。再ログインしてください。',
-        );
-        setIsIssuingTicket(false);
-        setLoading(false);
-        return;
-      }
-
-      let issued = false;
-      for (let i = 0; i < ISSUE_POLL_MAX_RETRIES; i++) {
-        const { count, error: ticketCheckError } = await supabase
-          .from('tickets')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId)
-          .eq('status', 'valid')
-          .eq('ticket_type', JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID);
-
-        if (!ticketCheckError && Number(count ?? 0) > 0) {
-          issued = true;
-          break;
-        }
-
-        await new Promise((resolve) => {
-          window.setTimeout(resolve, ISSUE_POLL_INTERVAL_MS);
-        });
-      }
-
+      const issued = await waitForJuniorEntryOnlyTicketIssued();
       if (!issued) {
         setErrorMessage(
           '入場専用券の反映確認に時間がかかっています。時間をおいて再度お試しください。',

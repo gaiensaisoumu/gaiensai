@@ -21,6 +21,7 @@ import { formatDateText } from '../../../utils/formatDateText';
 import styles from '../students/Issue.module.css';
 import {
   getJuniorApplicationDayVisibility,
+  type JuniorApplicationDays,
   parseJuniorApplicationDaySelection,
   resolveJuniorApplicationDays,
   serializeJuniorApplicationDaySelection,
@@ -140,12 +141,10 @@ const Issue = () => {
   const [juniorIssueCost, setJuniorIssueCost] = useState(1);
   const [remainingJuniorIssueCapacity, setRemainingJuniorIssueCapacity] =
     useState<number | null>(null);
-  const [classApplicationDays, setClassApplicationDays] = useState<Array<
-    'day1' | 'day2'
-  > | null>(null);
-  const [gymApplicationDays, setGymApplicationDays] = useState<Array<
-    'day1' | 'day2'
-  > | null>(null);
+  const [classApplicationDays, setClassApplicationDays] =
+    useState<JuniorApplicationDays | null>(null);
+  const [gymApplicationDays, setGymApplicationDays] =
+    useState<JuniorApplicationDays | null>(null);
   const [leavingStep, setLeavingStep] = useState<Step | null>(null);
   const [isForward, setIsForward] = useState(true);
   const animationTimerRef = useRef<number | null>(null);

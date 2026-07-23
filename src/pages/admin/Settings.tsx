@@ -20,6 +20,7 @@ type ControlPanelSettings = {
   showLength: number;
   maxTicketsPerUser: number;
   maxTicketsPerJuniorUser: number;
+  maxAdmissionOnlyJuniorAccounts: number;
   juniorReleaseOpen: boolean;
   ticketIssuingEnabled: boolean;
   activeTicketTypeIds: number[];
@@ -141,6 +142,11 @@ const NUMERIC_SETTING_META = {
     min: 1,
     max: 100,
   },
+  maxAdmissionOnlyJuniorAccounts: {
+    label: '入場専用券のみ登録可能な中学生アカウント上限',
+    min: 0,
+    max: 150,
+  },
   defaultClassTotalCapacity: {
     label: 'クラス公演の定員(合計)',
     min: 1,
@@ -181,6 +187,7 @@ const SettingsContent = () => {
     showLength: 60,
     maxTicketsPerUser: 20,
     maxTicketsPerJuniorUser: 2,
+    maxAdmissionOnlyJuniorAccounts: 100,
     juniorReleaseOpen: false,
     ticketIssuingEnabled: true,
     activeTicketTypeIds: [
@@ -461,6 +468,7 @@ const SettingsContent = () => {
           typeof nextSettings.eventYear !== 'number' ||
           typeof nextSettings.showLength !== 'number' ||
           typeof nextSettings.maxTicketsPerUser !== 'number' ||
+          typeof nextSettings.maxAdmissionOnlyJuniorAccounts !== 'number' ||
           typeof nextSettings.juniorReleaseOpen !== 'boolean' ||
           typeof nextSettings.ticketIssuingEnabled !== 'boolean' ||
           typeof nextSettings.defaultClassTotalCapacity !== 'number' ||
@@ -637,6 +645,8 @@ const SettingsContent = () => {
           showLength: nextSettings.showLength,
           maxTicketsPerUser: nextSettings.maxTicketsPerUser,
           maxTicketsPerJuniorUser: nextSettings.maxTicketsPerJuniorUser,
+          maxAdmissionOnlyJuniorAccounts:
+            nextSettings.maxAdmissionOnlyJuniorAccounts,
           juniorReleaseOpen: nextSettings.juniorReleaseOpen,
           ticketIssuingEnabled: nextSettings.ticketIssuingEnabled,
           defaultClassTotalCapacity: nextSettings.defaultClassTotalCapacity,
@@ -1545,6 +1555,32 @@ const SettingsContent = () => {
                   className={styles.inlineEditButton}
                   onClick={() =>
                     openNumericEditModal('maxTicketsPerJuniorUser')
+                  }
+                  disabled={isSettingsLoading || isSyncingSetting}
+                >
+                  変更する
+                </button>
+              </div>
+            </div>
+            <div className={styles.field}>
+              <label
+                className={styles.settingLabel}
+                htmlFor='ticket-admission-only-max-junior'
+              >
+                入場専用券のみ登録可能な中学生アカウント上限
+              </label>
+              <div className={styles.settingControlGroup}>
+                <span
+                  id='ticket-admission-only-max-junior'
+                  className={styles.fieldValue}
+                >
+                  {settings.maxAdmissionOnlyJuniorAccounts}
+                </span>
+                <button
+                  type='button'
+                  className={styles.inlineEditButton}
+                  onClick={() =>
+                    openNumericEditModal('maxAdmissionOnlyJuniorAccounts')
                   }
                   disabled={isSettingsLoading || isSyncingSetting}
                 >

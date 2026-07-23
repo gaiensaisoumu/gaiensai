@@ -337,15 +337,14 @@ const FAQ_DATA: FAQItem[] = [
     category: '中学生の方へ',
     question:
       'うっかり申し込み期限を過ぎてしまいましたが、外苑祭にいくことはできますか?',
-    answer:
-      '申し訳ありませんが、公演の事前予約はできません。ただし、展示部活または当日空きのある公演なら見られる場合がありますので、青山高校までお問い合わせください。',
+    answer: '申し訳ありませんが、ご来場いただけません。',
   },
   {
     category: '中学生の方へ',
     question:
       '第1段階選抜で落選してしまいましたが、外苑祭にいくことはできますか?',
     answer:
-      '申し訳ありませんが、公演の事前予約はできません。ただし、展示部活または当日空きのある公演なら見られる場合がありますので、青山高校までお問い合わせください。',
+      '申し訳ありませんが、公演の事前予約はできません。ただし、メールに先着順で校内入場のみ可能なチケットを発行できるURLを配布しておりますので、そちらに申し込みいただければ展示公演または当日空きのある公演はご覧になれます。詳しくは落選メールをご覧ください。',
   },
   {
     category: '中学生の方へ',
@@ -645,7 +644,10 @@ const FAQ = () => {
         </>
       );
     }
-    if (item.question === '各クラスの公演で、何を上演するのかや、時間を知りたいです。') {
+    if (
+      item.question ===
+      '各クラスの公演で、何を上演するのかや、時間を知りたいです。'
+    ) {
       return (
         <>
           <a href='/performances'>公演一覧</a>や
@@ -653,7 +655,10 @@ const FAQ = () => {
         </>
       );
     }
-    if (item.question === '取得したチケット一覧はどこで見られますか?' && item.category === '電子チケットの使い方(青高生用)') {
+    if (
+      item.question === '取得したチケット一覧はどこで見られますか?' &&
+      item.category === '電子チケットの使い方(青高生用)'
+    ) {
       return (
         <>
           <a href='/students/dashboard'>ダッシュボード</a>あるいは
@@ -662,7 +667,10 @@ const FAQ = () => {
         </>
       );
     }
-    if (item.question === '取得したチケット一覧はどこで見られますか?' && item.category === '中学生の方へ') {
+    if (
+      item.question === '取得したチケット一覧はどこで見られますか?' &&
+      item.category === '中学生の方へ'
+    ) {
       return (
         <>
           <a href='/junior/mypage'>マイページ</a>あるいは
@@ -700,7 +708,9 @@ const FAQ = () => {
         </>
       );
     }
-    if (item.question === 'このサイトのソースコードを使用することはできますか?') {
+    if (
+      item.question === 'このサイトのソースコードを使用することはできますか?'
+    ) {
       return (
         <>
           このサイトのソースコードはMITライセンスで公開されており、誰でも自由に使用、改変、配布することができます。使用の際に事前連絡は不要です。詳細は
@@ -738,7 +748,10 @@ const FAQ = () => {
       return FAQ_DATA;
     }
 
-    const keywords = searchQuery.toLowerCase().split(/\s+/).filter((k) => k.length > 0);
+    const keywords = searchQuery
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((k) => k.length > 0);
 
     return FAQ_DATA.filter((item) => {
       const category = item.category.toLowerCase();
@@ -748,7 +761,8 @@ const FAQ = () => {
 
       // 動的に生成される回答のテキストを取得
       const dynamicAnswer = getAnswer(item);
-      const dynamicAnswerText = typeof dynamicAnswer === 'string' ? dynamicAnswer.toLowerCase() : '';
+      const dynamicAnswerText =
+        typeof dynamicAnswer === 'string' ? dynamicAnswer.toLowerCase() : '';
 
       return keywords.every(
         (keyword) =>
@@ -756,7 +770,7 @@ const FAQ = () => {
           question.includes(keyword) ||
           answer.includes(keyword) ||
           searchText.includes(keyword) ||
-          dynamicAnswerText.includes(keyword)
+          dynamicAnswerText.includes(keyword),
       );
     });
   }, [searchQuery, config, formattedDateText]);

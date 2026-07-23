@@ -3,22 +3,27 @@ import { useLocation } from 'preact-iso';
 import { supabase } from '../../../lib/supabase';
 import { useTitle } from '../../../hooks/useTitle';
 import {
+  resolveJuniorApplicationDayError,
   resolveJuniorApplicationDays,
+  resolveJuniorApplicationDay,
   serializeJuniorApplicationDaySelection,
 } from './applicationDay';
+import {
+  JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID,
+  waitForJuniorEntryOnlyTicketIssued,
+} from './juniorTicketWait';
 import { createClient } from '@supabase/supabase-js';
 import styles from '../students/InitialRegistration.module.css';
 import subPageStyles from '../../../styles/sub-pages.module.css';
+import notFoundStyles from '../../../shared/NotFound.module.css';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
 import NormalSection from '../../../components/ui/NormalSection';
 import type { Session } from '../../../types/types';
 import { IoMdHelpCircleOutline } from 'react-icons/io';
+import Alert from '../../../components/ui/Alert';
 
-const JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID = 7;
 const SELF_RELATIONSHIP_ID = 1;
-const ISSUE_POLL_MAX_RETRIES = 20;
-const ISSUE_POLL_INTERVAL_MS = 300;
 
 interface JuniorSignUpProps {
   onRegistered?: (commit?: boolean) => Promise<boolean>;
@@ -26,6 +31,8 @@ interface JuniorSignUpProps {
 
 // コンポーネントで受け取る
 const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
+  const isAdmissionOnlyUrl =
+    resolveJuniorApplicationDay(window.location.search) === 'admission_only';
   const [juniorUsageType, setJuniorUsageType] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [isIssuingTicket, setIsIssuingTicket] = useState(false);
@@ -45,6 +52,15 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
       );
       return classDay === null && gymDay === null;
     });
+  const [isAdmissionOnlyApplication, setIsAdmissionOnlyApplication] =
+    useState(isAdmissionOnlyUrl);
+  const [admissionOnlyLimitReached, setAdmissionOnlyLimitReached] =
+    useState(false);
+  const [admissionOnlyStatusLoading, setAdmissionOnlyStatusLoading] =
+    useState(isAdmissionOnlyUrl);
+  const [admissionOnlyStatusError, setAdmissionOnlyStatusError] = useState<
+    string | null
+  >(null);
   const [secretCode, setSecretCode] = useState('');
 
   const [session, setSession] = useState<Session>(null);
@@ -65,6 +81,65 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const applicationDay = resolveJuniorApplicationDay(window.location.search);
+    const nextIsAdmissionOnly = applicationDay === 'admission_only';
+    setIsAdmissionOnlyApplication(nextIsAdmissionOnly);
+
+    if (!nextIsAdmissionOnly) {
+      return;
+    }
+
+    const loadAdmissionOnlyStatus = async () => {
+      setAdmissionOnlyStatusLoading(true);
+      setAdmissionOnlyStatusError(null);
+
+      try {
+        const [
+          { data: configData, error: configError },
+          { data: countData, error: countError },
+        ] = await Promise.all([
+          supabase
+            .from('configs')
+            .select('max_admission_only_junior_accounts')
+            .order('id', { ascending: true })
+            .limit(1)
+            .maybeSingle(),
+          supabase.rpc('get_admission_only_junior_account_count'),
+        ]);
+
+        if (configError || countError) {
+          throw new Error(
+            configError?.message ??
+              countError?.message ??
+              '設定の取得に失敗しました。',
+          );
+        }
+
+        const maxCount = Number(
+          configData?.max_admission_only_junior_accounts ?? 0,
+        );
+        const currentCount = Number(countData ?? 0);
+
+        if (
+          Number.isFinite(maxCount) &&
+          maxCount >= 0 &&
+          currentCount >= maxCount
+        ) {
+          setAdmissionOnlyLimitReached(true);
+        }
+      } catch (error) {
+        setAdmissionOnlyStatusError(
+          error instanceof Error ? error.message : '設定の取得に失敗しました。',
+        );
+      } finally {
+        setAdmissionOnlyStatusLoading(false);
+      }
+    };
+
+    void loadAdmissionOnlyStatus();
   }, []);
 
   useEffect(() => {
@@ -100,6 +175,15 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
   const handleSignUp = async (event: Event) => {
     event.preventDefault();
     setErrorMessage(null);
+
+    const applicationDayError = resolveJuniorApplicationDayError(
+      window.location.search,
+    );
+    if (applicationDayError) {
+      setErrorMessage(applicationDayError);
+      setLoading(false);
+      return;
+    }
 
     const { classDay, gymDay } = resolveJuniorApplicationDays(
       window.location.search,
@@ -183,6 +267,58 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
     }
 
     setLoading(true);
+
+    if (
+      isAdmissionOnlyApplication &&
+      !admissionOnlyLimitReached &&
+      !admissionOnlyStatusLoading &&
+      !admissionOnlyStatusError
+    ) {
+      try {
+        const [
+          { data: configData, error: configError },
+          { data: countData, error: countError },
+        ] = await Promise.all([
+          supabase
+            .from('configs')
+            .select('max_admission_only_junior_accounts')
+            .order('id', { ascending: true })
+            .limit(1)
+            .maybeSingle(),
+          supabase.rpc('get_admission_only_junior_account_count'),
+        ]);
+
+        if (configError || countError) {
+          throw new Error(
+            configError?.message ??
+              countError?.message ??
+              '設定の取得に失敗しました。',
+          );
+        }
+
+        const maxCount = Number(
+          configData?.max_admission_only_junior_accounts ?? 0,
+        );
+        const currentCount = Number(countData ?? 0);
+
+        if (
+          Number.isFinite(maxCount) &&
+          maxCount >= 0 &&
+          currentCount >= maxCount
+        ) {
+          setAdmissionOnlyLimitReached(true);
+          setErrorMessage('入場専用券の定数に達しているため、登録できません。');
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error ? error.message : '設定の取得に失敗しました。',
+        );
+        setLoading(false);
+        return;
+      }
+    }
 
     // 合言葉の検証（Edge Functionで実行）
     const { data: validationData, error: validationError } =
@@ -385,39 +521,7 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
         }
       }
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-
-      if (!userId) {
-        setErrorMessage(
-          '認証情報の取得に失敗しました。再ログインしてください。',
-        );
-        setIsIssuingTicket(false);
-        setLoading(false);
-        return;
-      }
-
-      let issued = false;
-      for (let i = 0; i < ISSUE_POLL_MAX_RETRIES; i++) {
-        const { count, error: ticketCheckError } = await supabase
-          .from('tickets')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId)
-          .eq('status', 'valid')
-          .eq('ticket_type', JUNIOR_ENTRY_ONLY_TICKET_TYPE_ID);
-
-        if (!ticketCheckError && Number(count ?? 0) > 0) {
-          issued = true;
-          break;
-        }
-
-        await new Promise((resolve) => {
-          window.setTimeout(resolve, ISSUE_POLL_INTERVAL_MS);
-        });
-      }
-
+      const issued = await waitForJuniorEntryOnlyTicketIssued();
       if (!issued) {
         setErrorMessage(
           '入場専用券の反映確認に時間がかかっています。時間をおいて再度お試しください。',
@@ -445,6 +549,35 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
     return null;
   }
 
+  if (isAdmissionOnlyApplication && admissionOnlyLimitReached) {
+    return (
+      <>
+        <h1 className={subPageStyles.pageTitle}>中学生用アカウント登録</h1>
+        <section className={styles.registrationContainer}>
+          <Alert type='info'>
+            誠に申し訳ありませんが、入場専用券の配布は、定数に達しましたので終了いたしました。
+          </Alert>
+          <div style={{ textAlign: 'center' }}>
+            <a href='/' className={notFoundStyles.returnLink}>
+              トップに戻る
+            </a>
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  if (isAdmissionOnlyApplication && admissionOnlyStatusLoading) {
+    return (
+      <>
+        <h1 className={subPageStyles.pageTitle}>中学生用アカウント登録</h1>
+        <section className={styles.registrationContainer}>
+          <LoadingSpinner />
+        </section>
+      </>
+    );
+  }
+
   return (
     <>
       <h1 className={subPageStyles.pageTitle}>中学生用アカウント登録</h1>
@@ -452,95 +585,113 @@ const JuniorSignUp = ({ onRegistered }: JuniorSignUpProps) => {
         <p className={styles.description}>
           ログインに使用するIDと誕生日を入力してアカウントを作成してください。
         </p>
+        {isAdmissionOnlyApplication && admissionOnlyStatusError ? (
+          <p className={styles.error}>{admissionOnlyStatusError}</p>
+        ) : null}
+        {isAdmissionOnlyApplication && admissionOnlyStatusLoading ? (
+          <LoadingSpinner />
+        ) : null}
         <form className={styles.form} onSubmit={handleSignUp}>
-          <NormalSection>
-            <h2 style={{ marginBottom: '0.5rem' }}>利用形態</h2>
-            <p>
-              「中学生と保護者(共通のチケット使用)」から「別々のチケットを使用」への変更以外は、後から変更できませんのでご注意ください。
-            </p>
-            <div className={styles.usageTypeSelection}>
-              <label
-                className={`${styles.usageTypeButton} ${
-                  juniorUsageType === 0 ? styles.usageTypeButtonSelected : ''
-                }`}
-              >
-                <input
-                  type='radio'
-                  name='junior-usage-type'
-                  className={styles.usageTypeRadio}
-                  checked={juniorUsageType === 0}
-                  onChange={() => handleUsageTypeChange(0)}
-                />
-                中学生と保護者(共通のチケット使用)
-              </label>
-              <label
-                className={`${styles.usageTypeButton} ${
-                  juniorUsageType === 1 ? styles.usageTypeButtonSelected : ''
-                }`}
-              >
-                <input
-                  type='radio'
-                  name='junior-usage-type'
-                  className={styles.usageTypeRadio}
-                  checked={juniorUsageType === 1}
-                  onChange={() => handleUsageTypeChange(1)}
-                />
-                中学生と保護者(別々のチケット使用)
-              </label>
-              <label
-                className={`${styles.usageTypeButton} ${
-                  juniorUsageType === 2 ? styles.usageTypeButtonSelected : ''
-                }`}
-              >
-                <input
-                  type='radio'
-                  name='junior-usage-type'
-                  className={styles.usageTypeRadio}
-                  checked={juniorUsageType === 2}
-                  onChange={() => handleUsageTypeChange(2)}
-                />
-                中学生のみ
-              </label>
-              <label
-                className={`${styles.usageTypeButton} ${
-                  juniorUsageType === 3 ? styles.usageTypeButtonSelected : ''
-                }`}
-              >
-                <input
-                  type='radio'
-                  name='junior-usage-type'
-                  className={styles.usageTypeRadio}
-                  checked={juniorUsageType === 3}
-                  onChange={() => handleUsageTypeChange(3)}
-                />
-                保護者のみ
-              </label>
-            </div>
-            {juniorUsageType === 0 && (
-              <>
-                <h3 className={styles.h3WithIcon}>
-                  <IoMdHelpCircleOutline />
-                  中学生と保護者(共通のチケット使用)とは
-                </h3>
+          {isAdmissionOnlyApplication && admissionOnlyLimitReached ? null : (
+            <>
+              <NormalSection>
+                <h2 style={{ marginBottom: '0.5rem' }}>利用形態</h2>
                 <p>
-                  1枚のチケットを発行するだけで、保護者と中学生2名分を使えるチケットです。チケットはURLを送信すれば、別々の端末でも表示可能です。
-                  同じ公演を見る予定の場合には便利ですが、残り1席の公演は予約できません。
+                  「中学生と保護者(共通のチケット使用)」から「別々のチケットを使用」への変更以外は、後から変更できませんのでご注意ください。
                 </p>
-              </>
-            )}
-            {juniorUsageType === 1 && (
-              <>
-                <h3 className={styles.h3WithIcon}>
-                  <IoMdHelpCircleOutline />
-                  中学生と保護者(別々のチケット使用)とは
-                </h3>
-                <p>
-                  中学生アカウントと保護者用アカウントの2つを作成して、それぞれでチケットを取得する方式です。ここで入力した保護者情報を用いて、保護者の端末でログインしてください。
-                  中学生と保護者で別々の公演を見たい場合、または残り1席の公演が見たい場合におすすめです。
-                </p>
-              </>
-            )}
-          </NormalSection>
+                <div className={styles.usageTypeSelection}>
+                  <label
+                    className={`${styles.usageTypeButton} ${
+                      juniorUsageType === 0
+                        ? styles.usageTypeButtonSelected
+                        : ''
+                    }`}
+                  >
+                    <input
+                      type='radio'
+                      name='junior-usage-type'
+                      className={styles.usageTypeRadio}
+                      checked={juniorUsageType === 0}
+                      onChange={() => handleUsageTypeChange(0)}
+                    />
+                    中学生と保護者(共通のチケット使用)
+                  </label>
+                  <label
+                    className={`${styles.usageTypeButton} ${
+                      juniorUsageType === 1
+                        ? styles.usageTypeButtonSelected
+                        : ''
+                    }`}
+                  >
+                    <input
+                      type='radio'
+                      name='junior-usage-type'
+                      className={styles.usageTypeRadio}
+                      checked={juniorUsageType === 1}
+                      onChange={() => handleUsageTypeChange(1)}
+                    />
+                    中学生と保護者(別々のチケット使用)
+                  </label>
+                  <label
+                    className={`${styles.usageTypeButton} ${
+                      juniorUsageType === 2
+                        ? styles.usageTypeButtonSelected
+                        : ''
+                    }`}
+                  >
+                    <input
+                      type='radio'
+                      name='junior-usage-type'
+                      className={styles.usageTypeRadio}
+                      checked={juniorUsageType === 2}
+                      onChange={() => handleUsageTypeChange(2)}
+                    />
+                    中学生のみ
+                  </label>
+                  <label
+                    className={`${styles.usageTypeButton} ${
+                      juniorUsageType === 3
+                        ? styles.usageTypeButtonSelected
+                        : ''
+                    }`}
+                  >
+                    <input
+                      type='radio'
+                      name='junior-usage-type'
+                      className={styles.usageTypeRadio}
+                      checked={juniorUsageType === 3}
+                      onChange={() => handleUsageTypeChange(3)}
+                    />
+                    保護者のみ
+                  </label>
+                </div>
+                {juniorUsageType === 0 && (
+                  <>
+                    <h3 className={styles.h3WithIcon}>
+                      <IoMdHelpCircleOutline />
+                      中学生と保護者(共通のチケット使用)とは
+                    </h3>
+                    <p>
+                      1枚のチケットを発行するだけで、保護者と中学生2名分を使えるチケットです。チケットはURLを送信すれば、別々の端末でも表示可能です。
+                      同じ公演を見る予定の場合には便利ですが、残り1席の公演は予約できません。
+                    </p>
+                  </>
+                )}
+                {juniorUsageType === 1 && (
+                  <>
+                    <h3 className={styles.h3WithIcon}>
+                      <IoMdHelpCircleOutline />
+                      中学生と保護者(別々のチケット使用)とは
+                    </h3>
+                    <p>
+                      中学生アカウントと保護者用アカウントの2つを作成して、それぞれでチケットを取得する方式です。ここで入力した保護者情報を用いて、保護者の端末でログインしてください。
+                      中学生と保護者で別々の公演を見たい場合、または残り1席の公演が見たい場合におすすめです。
+                    </p>
+                  </>
+                )}
+              </NormalSection>
+            </>
+          )}
 
           {juniorUsageType !== 3 && (
             <NormalSection>

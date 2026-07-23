@@ -210,7 +210,7 @@ const Home = () => {
         <h2>生徒用ページ</h2>
         <p>
           青高生の皆さんは、
-          <a href='/students' onMouseEnter={() => preload(Students)}>
+          <a href='/students/login' onMouseEnter={() => preload(Students)}>
             こちら
           </a>
           からダッシュボードにアクセスしてください。
@@ -220,7 +220,7 @@ const Home = () => {
         <h2>中学生用ページ</h2>
         <p>
           すでに当選メールから登録をした方は、
-          <a href='/students' onMouseEnter={() => preload(Students)}>
+          <a href='/junior/login' onMouseEnter={() => preload(Students)}>
             こちら
           </a>
           からログインが可能です。

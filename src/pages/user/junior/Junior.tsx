@@ -64,7 +64,7 @@ const Junior = () => {
   const loadUserProfile = async (userId: string) => {
     const { data, error }: { data: UserData; error: unknown } = await supabase
       .from('users')
-      .select('email, affiliation, junior_usage_type')
+      .select('email, affiliation, junior_usage_type, application_day')
       .eq('id', userId)
       .maybeSingle();
 

@@ -40,6 +40,7 @@ type AdminAuthRequest = {
   accountType?: unknown;
   juniorPassword?: unknown;
   secretCode?: unknown;
+  maxAdmissionOnlyJuniorAccounts?: unknown;
 };
 
 type TicketIssueMode =
@@ -90,6 +91,7 @@ type AdminAuthBody =
       showLength: number;
       maxTicketsPerUser: number;
       maxTicketsPerJuniorUser: number;
+      maxAdmissionOnlyJuniorAccounts: number;
       juniorReleaseOpen: boolean;
       ticketIssuingEnabled: boolean;
       defaultClassTotalCapacity: number;
@@ -118,6 +120,7 @@ type AdminSettingsRow = {
   show_length: number;
   max_tickets_per_user: number;
   max_tickets_per_junior_user: number;
+  max_admission_only_junior_accounts: number;
   junior_release_open: boolean;
   is_active: boolean;
 };
@@ -456,6 +459,7 @@ const parseBody = (body: unknown): AdminAuthBody => {
       defaultClassTotalCapacity,
       defaultClassJuniorCapacity,
       defaultGymCapacity,
+      maxAdmissionOnlyJuniorAccounts,
     } = body as AdminAuthRequest;
 
     const total = normalizeInteger(
@@ -513,6 +517,12 @@ const parseBody = (body: unknown): AdminAuthBody => {
         'defaultGymCapacity',
         1,
         2000,
+      ),
+      maxAdmissionOnlyJuniorAccounts: normalizeInteger(
+        maxAdmissionOnlyJuniorAccounts,
+        'maxAdmissionOnlyJuniorAccounts',
+        0,
+        100,
       ),
     };
   }
@@ -644,7 +654,7 @@ const fetchAdminSettings = async (adminClient: SupabaseClient) => {
   const { data, error } = await adminClient
     .from('configs')
     .select(
-      'id, event_year, show_length, max_tickets_per_user, max_tickets_per_junior_user, junior_release_open, is_active',
+      'id, event_year, show_length, max_tickets_per_user, max_tickets_per_junior_user, max_admission_only_junior_accounts, junior_release_open, is_active',
     )
     .limit(1);
 
@@ -1487,6 +1497,8 @@ Deno.serve(async (req) => {
             showLength: settings.show_length,
             maxTicketsPerUser: settings.max_tickets_per_user,
             maxTicketsPerJuniorUser: settings.max_tickets_per_junior_user,
+            maxAdmissionOnlyJuniorAccounts:
+              settings.max_admission_only_junior_accounts,
             juniorReleaseOpen: settings.junior_release_open,
             ticketIssuingEnabled: settings.is_active,
             defaultClassTotalCapacity: maxCapacities.maxClassTotal ?? 0,
@@ -1517,6 +1529,8 @@ Deno.serve(async (req) => {
           show_length: body.showLength,
           max_tickets_per_user: body.maxTicketsPerUser,
           max_tickets_per_junior_user: body.maxTicketsPerJuniorUser,
+          max_admission_only_junior_accounts:
+            body.maxAdmissionOnlyJuniorAccounts,
           junior_release_open: body.juniorReleaseOpen,
           is_active: body.ticketIssuingEnabled,
         })
@@ -1564,6 +1578,8 @@ Deno.serve(async (req) => {
             showLength: body.showLength,
             maxTicketsPerUser: body.maxTicketsPerUser,
             maxTicketsPerJuniorUser: body.maxTicketsPerJuniorUser,
+            maxAdmissionOnlyJuniorAccounts:
+              body.maxAdmissionOnlyJuniorAccounts,
             juniorReleaseOpen: body.juniorReleaseOpen,
             ticketIssuingEnabled: body.ticketIssuingEnabled,
             defaultClassTotalCapacity: body.defaultClassTotalCapacity,

@@ -1,8 +1,9 @@
-export type JuniorApplicationDay = 'day1' | 'day2';
+export type JuniorApplicationDay = 'day1' | 'day2' | 'admission_only';
 export type JuniorApplicationDays = JuniorApplicationDay[];
 
 const DAY1_PATTERN = /^(day1|1)$/i;
 const DAY2_PATTERN = /^(day2|2)$/i;
+const ADMISSION_ONLY_PATTERN = /^(admission_only|true|1)$/i;
 
 const parseSearch = (search: string) => new URLSearchParams(search);
 
@@ -62,6 +63,10 @@ export const normalizeJuniorApplicationDayValue = (
     return 'day2';
   }
 
+  if (ADMISSION_ONLY_PATTERN.test(trimmed)) {
+    return 'admission_only';
+  }
+
   return null;
 };
 
@@ -101,10 +106,46 @@ export const resolveJuniorApplicationDay = (
   search: string,
 ): JuniorApplicationDay | null => {
   const params = parseSearch(search);
+  const admissionOnly = params.get('admission_only');
+  if (admissionOnly) {
+    return normalizeJuniorApplicationDayValue(admissionOnly);
+  }
   const directDay = params.get('day');
   const applicationDay = directDay ?? params.get('application_day');
 
   return normalizeJuniorApplicationDayValue(applicationDay);
+};
+
+export const resolveJuniorApplicationDayError = (
+  search: string,
+): string | null => {
+  const params = parseSearch(search);
+  const admissionOnlyValues = params.getAll('admission_only');
+  const hasAdmissionOnly = admissionOnlyValues.length > 0;
+  if (!hasAdmissionOnly) {
+    return null;
+  }
+
+  const normalizedAdmissionOnly = admissionOnlyValues
+    .flatMap((value) => (value ?? '').split('&'))
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .every((value) => ADMISSION_ONLY_PATTERN.test(value));
+  if (!normalizedAdmissionOnly) {
+    return 'admission_only=true のみ指定してください。';
+  }
+
+  const hasOtherQuery = [
+    'class_day',
+    'gym_day',
+    'day',
+    'application_day',
+  ].some((key) => params.has(key));
+  if (hasOtherQuery) {
+    return 'admission_only=true と他のパラメータは併用できません。';
+  }
+
+  return null;
 };
 
 export const parseJuniorApplicationDaySelection = (
@@ -169,6 +210,16 @@ export const getJuniorApplicationDayVisibility = (selection: {
   showClassPerformances: boolean;
   showGymPerformances: boolean;
 } => {
+  const hasAdmissionOnly = [selection.classDay, selection.gymDay].some(
+    (days) => days?.includes('admission_only'),
+  );
+  if (hasAdmissionOnly) {
+    return {
+      showClassPerformances: false,
+      showGymPerformances: false,
+    };
+  }
+
   const hasClassSelection = Boolean(
     selection.classDay && selection.classDay.length > 0,
   );
@@ -188,6 +239,15 @@ export const resolveJuniorApplicationDays = (
   classDay: JuniorApplicationDays | null;
   gymDay: JuniorApplicationDays | null;
 } => {
+  const params = parseSearch(search);
+  const admissionOnlyValues = params.getAll('admission_only');
+  if (admissionOnlyValues.length > 0) {
+    return {
+      classDay: ['admission_only'],
+      gymDay: ['admission_only'],
+    };
+  }
+
   const classDayValues = parseQueryValuesFromSearchString(search, 'class_day');
   const gymDayValues = parseQueryValuesFromSearchString(search, 'gym_day');
   const fallbackValues = parseQueryValuesFromSearchString(search, 'day');

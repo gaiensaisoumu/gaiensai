@@ -5,6 +5,7 @@ import {
   normalizeJuniorApplicationDayValue,
   normalizeJuniorApplicationDaysValue,
   parseJuniorApplicationDaySelection,
+  resolveJuniorApplicationDayError,
   resolveJuniorApplicationDay,
   resolveJuniorApplicationDays,
   serializeJuniorApplicationDaySelection,
@@ -16,11 +17,28 @@ describe('resolveJuniorApplicationDay', () => {
     expect(resolveJuniorApplicationDay('day=2')).toBe('day2');
     expect(resolveJuniorApplicationDay('application_day=day2')).toBe('day2');
     expect(resolveJuniorApplicationDay('application_day=day1')).toBe('day1');
+    expect(resolveJuniorApplicationDay('admission_only=true')).toBe(
+      'admission_only',
+    );
   });
 
   it('returns null for unsupported values', () => {
     expect(resolveJuniorApplicationDay('application_day=day3')).toBeNull();
     expect(resolveJuniorApplicationDay('')).toBeNull();
+  });
+});
+
+describe('resolveJuniorApplicationDayError', () => {
+  it('rejects admission_only mixed with other parameters', () => {
+    expect(
+      resolveJuniorApplicationDayError(
+        'admission_only=true&class_day=day1',
+      ),
+    ).toBe('admission_only=true と他のパラメータは併用できません。');
+  });
+
+  it('allows admission_only by itself', () => {
+    expect(resolveJuniorApplicationDayError('admission_only=true')).toBeNull();
   });
 });
 
