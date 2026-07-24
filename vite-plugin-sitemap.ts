@@ -132,7 +132,7 @@ const routeMatches = (route: string, pattern: string) => {
   if (normalizedPattern.endsWith('/*')) {
     const prefix = normalizedPattern.slice(0, -2);
     return (
-      normalizedRoute === prefix || normalizedRoute.startsWith(`${prefix}/`)
+      normalizedRoute.startsWith(`${prefix}/`)
     );
   }
 
@@ -172,12 +172,11 @@ export function sitemapPlugin(options: SitemapPluginOptions = {}): Plugin {
       const allRoutes = [...defaultRoutes, ...additionalRoutes];
 
       // Define excluded routes
-      const excludedRoutes = EXCLUDE_ROUTES;
-      const noindexRoutes = options.noindexRoutes || excludedRoutes;
+      const noindexRoutes = options.noindexRoutes || EXCLUDE_ROUTES;
 
       // Filter out excluded routes
       const filteredRoutes = allRoutes.filter((route) => {
-        return !excludedRoutes.some((excluded) =>
+        return !EXCLUDE_ROUTES.some((excluded) =>
           routeMatches(route, excluded),
         );
       });
