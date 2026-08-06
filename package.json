@@ -34,7 +34,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.8.0",
+    "globals": "^17.9.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.6",
     "supabase": "^2.111.0",
