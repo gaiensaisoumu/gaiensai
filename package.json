@@ -16,7 +16,7 @@
     "test": "eslint . && npm run test:deno && npm run test:vitest"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.111.0",
+    "@supabase/supabase-js": "^2.112.0",
     "exceljs": "^4.4.0",
     "preact": "^10.29.8",
     "preact-iso": "^2.12.1",
